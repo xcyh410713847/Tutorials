@@ -1,0 +1,219 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（二十七）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P>
+<EM>
+<A href="https://zhuanlan.zhihu.com/p/29933257" target=_blank >原文链接</A>
+
+</EM>
+</P>
+<P >
+<EM >
+  (未修改原文）</EM></P>
+
+<P>
+<EM>正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>上一篇我们实现了一个基本的BMP文件解析器。事实上，对于游戏制作来说，BMP文件并不是一种好的文件形式，这主要因为:</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">BMP文件并不是跨平台的。很多平台都有BMP文件，但是其格式其实是有微妙的不同的；</LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">BMP文件一般不采用压缩，所以比较大；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">BMP文件在图片制作元数据及色彩管理等方面功能有限；</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因此，我们还需要加入几种其它的图片文件格式支持，如PNG、JPG等。这些文件相对于BMP都要复杂一些，同时涉及到一些较为复杂的压缩算法，也正好是给我们测试我们的（并行计算）数学库的一个机会。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>不过因为我们急切地想看到我们的第一个场景渲染结果，所以这里暂时把这些事情往后面推推。既然我们已经有了一个基础的数学库，一个简单的文件资源加载器，和一个BMP格式的贴图文件解析器，那么如果我再实现一个3D场景描述文件的解析器，结合我们之前开发的渲染器，那么我们就应该可以进行一些较为复杂的场景的渲染工作了。所以让我们先进行这些工作。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>3D模型及/或场景描述（矢量）文件也有很多格式。比如较早的obj格式，VRML格式；专有的3ds格式，maya格式，unity格式，ue格式，FBX格式；开源的blender格式，OpenGEX格式；元SCEA员工创造的现在由Khronos 
+Group（就是维护OpenGL和Vulkan的那个非盈利组织）维护的COLLADA格式，等等。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>其中，抛开专有格式不谈，COLLADA和OpenGEX这两种格式是比较适合游戏引擎用途，也比较完整的。其它的一些格式要么更多的是面向网页浏览器的渲染为主要对象设计的，要么是主要面向CAD等设计领域，对于游戏当中扮演重要角色的一些功能，如骨骼动画、物理碰撞等的支持十分有限。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>COLLADA的优势主要在于推出的年代较早，所以目前支持这个格式的DCC软件以及商业游戏引擎很多。但是也正因为年代早所以其对一些近代的功能支持有限或者不支持，比如LOD，PBR渲染。当然因为它是基于XML的我们可以较为容易地对其进行拓展，只不过这样的拓展会面临很多的兼容互换性问题。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>OpenGEX的设计是基于OpenDDL这个同样是开放的通用可读的数据结构定义语法，相对使用XML的COLLADA来说同样的场景定义要更为简洁，文件尺寸也比较小。但是其第一版标准至今也才3年多的时间，目前被支持的范围相对来说小很多。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这两种文件格式均是采用了可读的文本文件格式。一般来说，文本文件格式更加适合作为不同软件之间的互换格式，因为它没有诸如Endian或者32/64 
+bit，字节对齐等诸多平台兼容性问题。而且文本文件容易阅读，容易发现错误，容易编辑。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>但是文本文件通常需要经过多次读取转换才能形成内存上的数据结构，相对来说效率是比较低的。一般来说，在游戏引擎运行时当中，至少是最后的发行版本当中，还是会以二进制形式为主。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>抛开文件的格式不谈，这两种文件格式都为我们展现了一个比较近代的场景图（Scene 
+Graph）结构。以OpenGEX为例，其至少包括以下这些数据结构:</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">场景的层叠式组织结构 (节点树 node 
+  trees)<BR>节点或者场景物体的坐标变换 (4×4 矩阵、 平移、 旋转、缩放)</LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">场景几何体对象， 光照对象， 
+  摄像机对象<BR>包含多个LOD级别的顶点数据和索引数据的网格<BR>蒙皮网格 
+  (骨骼，骨骼绑定，骨骼影响权重因子).<BR>网格的多个变形目的对象，以及动画化了的变形权重</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">关键帧动画以及线性、贝塞尔、TCB动画曲线<BR>材质与贴图 
+  (漫反射，高光，法线，切线，自发光， 透明度，凹凸，位移或者PBR类型的金属度，粗糙度，AO等)</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>关于坐标变换所需要的各种矩阵我们之前已经在数学库当中建立。所以接下来我们主要需要定义以下一些数据结构∶</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">场景图（其实就是由节点与节点关系组成的图（树））</LI>
+  <OL 
+  style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol2 0; PADDING-RIGHT: 0px">
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">节点关系</LI>
+    <OL 
+    style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol3 0; PADDING-RIGHT: 0px">
+      <LI 
+      style="LIST-STYLE-TYPE: none; DISPLAY: table-row">依存关系（表示节点之间有依赖关系需要同步加载/卸载）</LI>
+      <LI 
+      style="LIST-STYLE-TYPE: none; DISPLAY: table-row">包含关系（表示节点之间有从属关系，源节点拥有目的节点的所有权，源节点管理目的节点的生命周期）</LI>
+      <LI 
+      style="LIST-STYLE-TYPE: none; DISPLAY: table-row">聚集关系（表示节点之间有从属关系，但是源节点不拥有目的节点的所有权，源节点不管理目的节点的生命周期）</LI>
+      <LI 
+      style="LIST-STYLE-TYPE: none; DISPLAY: table-row">扩展关系（表示目的节点对于源节点进行扩展，但两者不是从属关系，而是服务和服务对象的关系）</LI>
+      <LI 
+      style="LIST-STYLE-TYPE: none; DISPLAY: table-row">参考引用关系（表示源节点是目的节点的一个占位符，一个实例）</LI></OL>
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">节点（代表场景当中的层级和位置）</LI>
+    <OL 
+    style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol3 0; PADDING-RIGHT: 0px">
+      <LI 
+      style="LIST-STYLE-TYPE: none; DISPLAY: table-row">普通节点（起到概念上分组和链接其它节点的作用，并对从属节点施加统一的影响，如坐标变换，参数动画，特效范围。或者是定义一些和空间位置有关的处理，如反射材质球，volume）</LI>
+      <LI 
+      style="LIST-STYLE-TYPE: none; DISPLAY: table-row">几何体节点（指向几何体对象）<BR></LI>
+      <LI 
+      style="LIST-STYLE-TYPE: none; DISPLAY: table-row">骨骼节点（指向带有骨骼的几何体对象）</LI>
+      <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">摄像机节点（指向摄像机对象）</LI>
+      <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">光照节点（指向光照对象）</LI></OL></OL>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">场景对象（指与场景结构无关的对象）</LI>
+  <OL 
+  style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol2 0; PADDING-RIGHT: 0px">
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">场景几何体对象</LI>
+    <OL 
+    style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol3 0; PADDING-RIGHT: 0px">
+      <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">网格</LI>
+      <OL 
+      style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol4 0; PADDING-RIGHT: 0px">
+        <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">顶点</LI>
+        <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">索引</LI>
+        <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">蒙皮</LI>
+        <OL 
+        style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol4 0; PADDING-RIGHT: 0px">
+          <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">骨骼</LI></OL></OL>
+      <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">变形</LI></OL></OL>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">材质对象</LI>
+  <OL 
+  style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol2 0; PADDING-RIGHT: 0px">
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">贴图</LI>
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">颜色</LI>
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">参数</LI></OL>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">摄像机对象</LI>
+  <OL 
+  style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol2 0; PADDING-RIGHT: 0px">
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">参数（FOV，裁剪平面等）</LI></OL>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">光照对象</LI>
+  <OL 
+  style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol2 0; PADDING-RIGHT: 0px">
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">贴图</LI>
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">颜色</LI>
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">参数（类型，亮度等）</LI>
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">传递函数</LI></OL></OL>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>如果画成一张图的话，大概是下面这个样子：（图中只包含了从属关系）</P>
+<P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-f999a1860e9f8d938410b3c5836dfde1_hd.jpg" 
+width=1280 
+data-original="https://pic2.zhimg.com/v2-f999a1860e9f8d938410b3c5836dfde1_r.jpg" 
+data-actualsrc="https://pic2.zhimg.com/v2-f999a1860e9f8d938410b3c5836dfde1_b.jpg" 
+data-rawheight="1172" data-rawwidth="1280" data-caption=""></FIGURE></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>* 
+图片引用自（参考引用2）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>可以看到还是比较复杂的。接下来我们先从静态场景开始，逐渐扩展到包括动画等在内的完整的结构。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>顺便说一下，因为接下来我们会开始往代码树当中加入比较多的二进制文件，比如各种资源文件。为了更为有效地管理这些文件，我在GitHub的这个项目当中开启了LFS功能，并且对master的历史进行了改写。（参考引用6）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>导入LFS的另外一个考虑是为后面的编辑器的美术资源生产线管理做准备，这个后面相关的地方再细谈。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因为改写了git 
+repo的历史，在昨天之前fork了的朋友抱歉了，你们可能需要重新fork，或者手动merge一下。（在真实项目当中记得不到万不得已千万别这样做。。。）m(_ 
+_)m</P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic3.zhimg.com/80/v2-686c91ad59bf097de0baa7e1304a53e6_hd.jpg" 
+width=88 
+data-actualsrc="https://pic3.zhimg.com/v2-686c91ad59bf097de0baa7e1304a53e6_b.jpg" 
+data-rawheight="31" data-rawwidth="88"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">本作品采用知识共享署名 
+4.0 国际许可协议进行许可。</FIGCAPTION></FIGURE></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><B 
+style="FONT-WEIGHT: 600">参考引用</B></P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/List_of_vector_graphics_markup_languages" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Image 
+  file formats</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.m.wikipedia.org/wiki/Open_Game_Engine_Exchange" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Open 
+  Game Engine Exchange</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.m.wikipedia.org/wiki/COLLADA" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">COLLADA 
+  - Wikipedia</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//www.zipcon.net/~swhite/docs/computers/languages/c_multi-char_const.html" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Best 
+  practices for multi-character character constants</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A class=" external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//stackoverflow.com/questions/39144504/assign-multibyte-ascii-literals-to-enum-values" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+  class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">https://</SPAN><SPAN 
+  class=visible>stackoverflow.com/quest</SPAN><SPAN class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">ions/39144504/assign-multibyte-ascii-literals-to-enum-values</SPAN><SPAN 
+  class=ellipsis></SPAN></A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A class=" external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//git-lfs.github.com/" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+  class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">https://</SPAN><SPAN 
+  class=visible>git-lfs.github.com/</SPAN></A></LI></OL></body>
+</html>

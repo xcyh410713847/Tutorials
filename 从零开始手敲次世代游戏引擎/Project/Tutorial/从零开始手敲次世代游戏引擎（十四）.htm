@@ -1,0 +1,487 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（十四）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/28806010" target=_blank >原文链接 </A></EM></P>
+<P><EM>(未修改原文） </EM></P>
+<P><EM>正文开始：</EM> </P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接上一篇，对代码进行一个简单的说明。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先我们依然是加入OpenGL的头文件。这里需要特别注意的是Clang缺省是大小写敏感的，所以必须如下书写：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;GL/gl.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>前面提到过，OpenGL是在显卡的驱动程序里面实现的。而显卡的驱动程序因厂商不同而不同。而且，同一个厂商也会有许多不同版本的驱动程序。因此，我们的程序不应该也不可能直接与驱动程序进行链接。因此，OpenGL的API是一种2进制的API，需要在运行的时候动态地去查找这些API所在的位置（也就是这些API在内存上的地址）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们这次的程序看起来很长，但实际上一大半都是在进行这个工作而已。如果使用Glew等OpenGL 
+Loader（也就是加载工具），那么这些代码都可以省去。但是，在使用方便的工具之前，了解它们实际上都在做些什么，是很有意思的。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>/////////////
+// DEFINES //
+/////////////
+#define WGL_DRAW_TO_WINDOW_ARB         0x2001
+#define WGL_ACCELERATION_ARB           0x2003
+#define WGL_SWAP_METHOD_ARB            0x2007
+#define WGL_SUPPORT_OPENGL_ARB         0x2010
+#define WGL_DOUBLE_BUFFER_ARB          0x2011
+#define WGL_PIXEL_TYPE_ARB             0x2013
+#define WGL_COLOR_BITS_ARB             0x2014
+#define WGL_DEPTH_BITS_ARB             0x2022
+#define WGL_STENCIL_BITS_ARB           0x2023
+#define WGL_FULL_ACCELERATION_ARB      0x2027
+#define WGL_SWAP_EXCHANGE_ARB          0x2028
+#define WGL_TYPE_RGBA_ARB              0x202B
+#define WGL_CONTEXT_MAJOR_VERSION_ARB  0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB  0x2092
+#define GL_ARRAY_BUFFER                   0x8892
+#define GL_STATIC_DRAW                    0x88E4
+#define GL_FRAGMENT_SHADER                0x8B30
+#define GL_VERTEX_SHADER                  0x8B31
+#define GL_COMPILE_STATUS                 0x8B81
+#define GL_LINK_STATUS                    0x8B82
+#define GL_INFO_LOG_LENGTH                0x8B84
+#define GL_TEXTURE0                       0x84C0
+#define GL_BGRA                           0x80E1
+#define GL_ELEMENT_ARRAY_BUFFER           0x8893
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这是定义了一些识别子。这个定义是OpenGL规范事先规定好的，只是一个规定，并没有什么道理。显卡厂商按照这个规定写驱动，我们也必须按照这个规定写程序，两边才能对接起来。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>WGL是微软提供的OpenGL的兼容版本。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>下面的是OpenGL的API的类型定义。这些定义，同样的，是OpenGL规范的规定。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">//////////////
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// TYPEDEFS //
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">//////////////
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN><SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">BOOL</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>WINAPI</SPAN>   <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNWGLCHOOSEPIXELFORMATARBPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>HDC</SPAN> <SPAN class=n>hdc</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>piAttribIList</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>FLOAT</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>pfAttribFList</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>UINT</SPAN> <SPAN class=n>nMaxFormats</SPAN><SPAN class=p>,</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>piFormats</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>UINT</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>nNumFormats</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">HGLRC</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>WINAPI</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNWGLCREATECONTEXTATTRIBSARBPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>HDC</SPAN> <SPAN class=n>hDC</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>HGLRC</SPAN> <SPAN class=n>hShareContext</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>attribList</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">BOOL</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>WINAPI</SPAN>   <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNWGLSWAPINTERVALEXTPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>interval</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLATTACHSHADERPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>program</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLuint</SPAN> <SPAN class=n>shader</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLBINDBUFFERPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLenum</SPAN> <SPAN class=n>target</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLuint</SPAN> <SPAN class=n>buffer</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLBINDVERTEXARRAYPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>array</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLBUFFERDATAPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLenum</SPAN> <SPAN class=n>target</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>ptrdiff_t</SPAN> <SPAN class=n>size</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>GLvoid</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>data</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLenum</SPAN> <SPAN class=n>usage</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLCOMPILESHADERPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>shader</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">GLuint</SPAN><SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLCREATEPROGRAMPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">GLuint</SPAN><SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLCREATESHADERPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLenum</SPAN> <SPAN class=n>type</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLDELETEBUFFERSPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLsizei</SPAN> <SPAN class=n>n</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>GLuint</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>buffers</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLDELETEPROGRAMPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>program</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLDELETESHADERPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>shader</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLDELETEVERTEXARRAYSPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLsizei</SPAN> <SPAN class=n>n</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>GLuint</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>arrays</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLDETACHSHADERPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>program</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLuint</SPAN> <SPAN class=n>shader</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLENABLEVERTEXATTRIBARRAYPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>index</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLGENBUFFERSPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLsizei</SPAN> <SPAN class=n>n</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLuint</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>buffers</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLGENVERTEXARRAYSPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLsizei</SPAN> <SPAN class=n>n</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLuint</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>arrays</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">GLint</SPAN><SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLGETATTRIBLOCATIONPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>program</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>name</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLGETPROGRAMINFOLOGPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>program</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLsizei</SPAN> <SPAN class=n>bufSize</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLsizei</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>length</SPAN><SPAN class=p>,</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>infoLog</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLGETPROGRAMIVPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>program</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLenum</SPAN> <SPAN class=n>pname</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLint</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>params</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLGETSHADERINFOLOGPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>shader</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLsizei</SPAN> <SPAN class=n>bufSize</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLsizei</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>length</SPAN><SPAN class=p>,</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>infoLog</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLGETSHADERIVPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>shader</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLenum</SPAN> <SPAN class=n>pname</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLint</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>params</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLLINKPROGRAMPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>program</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLSHADERSOURCEPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>shader</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLsizei</SPAN> <SPAN class=n>count</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>string</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>GLint</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>length</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLUSEPROGRAMPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>program</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLVERTEXATTRIBPOINTERPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>index</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLint</SPAN> <SPAN class=n>size</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLenum</SPAN> <SPAN class=n>type</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLboolean</SPAN> <SPAN class=n>normalized</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLsizei</SPAN> <SPAN class=n>stride</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>GLvoid</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>pointer</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLBINDATTRIBLOCATIONPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>program</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLuint</SPAN> <SPAN class=n>index</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>name</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">GLint</SPAN><SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLGETUNIFORMLOCATIONPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>program</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>name</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLUNIFORMMATRIX4FVPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLint</SPAN> <SPAN class=n>location</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLsizei</SPAN> <SPAN class=n>count</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLboolean</SPAN> <SPAN class=n>transpose</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>GLfloat</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>value</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLACTIVETEXTUREPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLenum</SPAN> <SPAN class=n>texture</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLUNIFORM1IPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLint</SPAN> <SPAN class=n>location</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLint</SPAN> <SPAN class=n>v0</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLGENERATEMIPMAPPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLenum</SPAN> <SPAN class=n>target</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLDISABLEVERTEXATTRIBARRAYPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLuint</SPAN> <SPAN class=n>index</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLUNIFORM3FVPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLint</SPAN> <SPAN class=n>location</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLsizei</SPAN> <SPAN class=n>count</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>GLfloat</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>value</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">void</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>APIENTRY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>PFNGLUNIFORM4FVPROC</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>GLint</SPAN> <SPAN class=n>location</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLsizei</SPAN> <SPAN class=n>count</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>GLfloat</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>value</SPAN><SPAN class=p>);</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们用这些函数指针类型定义我们自己的函数指针，用来存储OpenGL 
+API的调用（跳转）地址：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>PFNGLATTACHSHADERPROC glAttachShader;
+PFNGLBINDBUFFERPROC glBindBuffer;
+PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
+PFNGLBUFFERDATAPROC glBufferData;
+PFNGLCOMPILESHADERPROC glCompileShader;
+PFNGLCREATEPROGRAMPROC glCreateProgram;
+PFNGLCREATESHADERPROC glCreateShader;
+PFNGLDELETEBUFFERSPROC glDeleteBuffers;
+PFNGLDELETEPROGRAMPROC glDeleteProgram;
+PFNGLDELETESHADERPROC glDeleteShader;
+PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
+PFNGLDETACHSHADERPROC glDetachShader;
+PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
+PFNGLGENBUFFERSPROC glGenBuffers;
+PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
+PFNGLGETATTRIBLOCATIONPROC glGetAttribLocation;
+PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
+PFNGLGETPROGRAMIVPROC glGetProgramiv;
+PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
+PFNGLGETSHADERIVPROC glGetShaderiv;
+PFNGLLINKPROGRAMPROC glLinkProgram;
+PFNGLSHADERSOURCEPROC glShaderSource;
+PFNGLUSEPROGRAMPROC glUseProgram;
+PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
+PFNGLBINDATTRIBLOCATIONPROC glBindAttribLocation;
+PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
+PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv;
+PFNGLACTIVETEXTUREPROC glActiveTexture;
+PFNGLUNIFORM1IPROC glUniform1i;
+PFNGLGENERATEMIPMAPPROC glGenerateMipmap;
+PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray;
+PFNGLUNIFORM3FVPROC glUniform3fv;
+PFNGLUNIFORM4FVPROC glUniform4fv;
+
+PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
+PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
+PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>OpenGL的API分为核心API，扩展API，以及平台API。核心API是那些成熟的，已经正式纳入某个版本的OpenGL规范的API。扩展API是那些厂商拓展的，还没有正式纳入某个版本的OpenGL的API。平台API则是那些和平台密切相关的，比如生成上下文，改变分辨率，改变刷新率的API。上面以wgl开头的，为平台API。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>随着显卡的发展和OpenGL的版本升级，这些API都是在动态改变的。[*1]</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">struct</SPAN> <SPAN class=n>VertexType</SPAN>
+<SPAN class=p>{</SPAN>
+	<SPAN class=n>VectorType</SPAN> <SPAN class=n>position</SPAN><SPAN class=p>;</SPAN>
+	<SPAN class=n>VectorType</SPAN> <SPAN class=n>color</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN> <SPAN class=n>VertexType</SPAN><SPAN class=p>;</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这是定义了一个顶点所包含的数据（正式名称称为属性）的个数和类型。这个在前面的文章当中就已经用到过了。顶点数据结构对于渲染的性能指标有着很大的影响。因为在GPU工作的时候，它会将这些数据挨个读入到内部寄存器，然后交给内部的Shader执行器去执行我们写的Shader代码。这个数据结构越复杂，占用的内部寄存器就越多，那么可以并行执行的Shader就会减少，从而导致整个渲染时间增加。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>Epic在使用UE4制作Paragon的时候，就遇到了这个问题。因为从别的角度来看，顶点数据结构以及Shader的通用程度也是十分重要的。UE4广泛使用基于物理的渲染，所以它的顶点数据结构是比较复杂的，包括很多参数。同时，Shader也是在执行期进行绑定的。也就是说，在UE4当中，并不是像我们现在这样，将顶点的数据结构和Shader一一对应起来。这就造成了在执行的时候，读入寄存器的大量顶点数据当中的相当一部分属性，对于大部分的Shader来说，其实是用不到的。这就白白的浪费了GPU的寄存器，降低了并行执行的数量，拉长了渲染时间。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因此，Epic在Paragon项目当中，采用了一些特别的手法，将不需要的顶点属性剔除，不读入GPU寄存器。但是实现这个是有前提条件的，比如AMD的GCN架构，因为它在执行VS 
+Shader之前，有一个被称为是LS的阶段，专门用来处理数据加载的，那么就可以通过改变这个LS来实现这样的目的。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=n>VS_SHADER_SOURCE_FILE</SPAN><SPAN class=p>[]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"color.vs"</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=n>PS_SHADER_SOURCE_FILE</SPAN><SPAN class=p>[]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"color.ps"</SPAN><SPAN class=p>;</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这里定义了VS 
+Shader和PS 
+Shader的程序文件名。在我们之前的DX的例子里，我们是在离线情况下先将Shader编译成二进制，再在运行时读入到GPU当中去的。这里我们演示了另外一种方法，直接读取Shader的源代码，然后在运行时内进行编译，之后再设置到GPU当中去。这种方法实质上允许我们在执行的时候动态生成Shader代码给自己使用。就类似Java/Javascript的JIT编译。我们现在有很多网游是支持“热更新”的，这种“热更新”往往就是采用了这种手段。当然，不仅仅是Shader，还包括游戏本身的逻辑，UI等（比如Lua语言）。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>但是这种方法从安全角度来看是有巨大的隐患的。它意味着程序可以执行任何代码，包括未知的代码。因此，在一些成熟的平台，比如PS4平台上，这种功能是被禁止掉的。也就是说，只能使用离线编译好的代码。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN> <SPAN class=n>g_worldMatrix</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">16</SPAN><SPAN class=p>];</SPAN>
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN> <SPAN class=n>g_viewMatrix</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">16</SPAN><SPAN class=p>];</SPAN>
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN> <SPAN class=n>g_projectionMatrix</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">16</SPAN><SPAN class=p>];</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个就是所谓的ＭＶP矩阵，是实现3D空间到2D空间的投影，摄像机语言，以及动画的关键。之前的文章我们渲染的都是静态的图像；而这里我们加入了这个MVP矩阵，我们就可以渲染动画了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来都是一些辅助性函数（子过程），我们先跳过它们，看我们的主函数（WinMain）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先我们可以看到的一个大的改变是我们创建了两次Window。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>// fill in the struct with the needed information
+    wc.cbSize = sizeof(WNDCLASSEX);
+    wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    wc.lpfnWndProc = DefWindowProc;
+    wc.hInstance = hInstance;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+    wc.lpszClassName = _T("Temporary");
+
+    // register the window class
+    RegisterClassEx(&amp;wc);
+
+    // create the temporary window for OpenGL extension setup.
+    hWnd = CreateWindowEx(WS_EX_APPWINDOW,
+                          _T("Temporary"),    // name of the window class
+                          _T("Temporary"),   // title of the window
+                          WS_OVERLAPPEDWINDOW,    // window style
+                          0,    // x-position of the window
+                          0,    // y-position of the window
+                          640,    // width of the window
+                          480,    // height of the window
+                          NULL,    // we have no parent window, NULL
+                          NULL,    // we aren't using menus, NULL
+                          hInstance,    // application handle
+                          NULL);    // used with multiple windows, NULL
+
+                                    // Don't show the window.
+    ShowWindow(hWnd, SW_HIDE);
+
+    InitializeExtensions(hWnd);
+
+    DestroyWindow(hWnd);
+    hWnd = NULL;
+
+    // clear out the window class for use
+    ZeroMemory(&amp;wc, sizeof(WNDCLASSEX));
+
+    // fill in the struct with the needed information
+    wc.cbSize = sizeof(WNDCLASSEX);
+    wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = hInstance;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+    wc.lpszClassName = _T("Hello, Engine!");
+
+    // register the window class
+    RegisterClassEx(&amp;wc);
+
+    // create the window and use the result as the handle
+    hWnd = CreateWindowEx(WS_EX_APPWINDOW,
+        _T("Hello, Engine!"),    // name of the window class
+        _T("Hello, Engine!"),   // title of the window
+        WS_OVERLAPPEDWINDOW,    // window style
+        300,    // x-position of the window
+        300,    // y-position of the window
+        960,    // width of the window
+        540,    // height of the window
+        NULL,    // we have no parent window, NULL
+        NULL,    // we aren't using menus, NULL
+        hInstance,    // application handle
+        NULL);    // used with multiple windows, NULL
+
+    InitializeOpenGL(hWnd, 960, 540, SCREEN_DEPTH, SCREEN_NEAR, true);
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这是因为在Windows当中，获取OpenGL 
+API入口的API，它本身也是一个OpenGL扩展函数。OpenGL的API必须在创建了一个Draw 
+Context（DC）的情况下，才可以使用。因此我们先创建了一个纯粹以加载DC为目的的临时窗口，将OpenGL 
+API的入口地址全部加载到我们事先定义好的函数指针之中。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这里需要注意的有几个点：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">注册的windows class 
+  (wc)的wc.style，必须包含CS_OWNDC。这个标志强迫Windows为使用该windows 
+  class的每一个窗口创建一个单独的DC。如果没有这个标志，那么DC会在所有使用这个windows 
+  class的窗口之间共用，那么这是一个很危险的事情。（也就是某个窗口改变了frame buffer的格式会导致其它同一个windows 
+  class的窗口的frame buffer的格式也改变）</LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">由于在调用wgl系的函数之前，要先确定frame 
+  buffer的pixel format，也就是frame 
+  buffer的格式，我们在第一次创建窗口之后，InitializeExtensions里面，指定了缺省的pixel 
+  format。（因为这个时候我们OpenGL API的函数入口都没有找到，没有办法知道显卡所支持的pixel 
+  format）然而不幸的是，这个SetPixelFormat对于每一个窗口，只能执行一次。因此，在我们完成InitializeExtensions之后，获得了OpenGL 
+  API的入口，想要将Frame buffer指定为我们喜欢的格式的时候，我们必须关闭当前这个（临时）窗口，重新创建一个窗口（也就是重新创建DC）</LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">相同的window 
+  class的窗口是共用一个消息处理函数（windowproc）的。<BR><A class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//msdn.microsoft.com/en-us/library/windows/desktop/ms633574%28v%3Dvs.85%29.aspx" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">About 
+  Window Classes</A><BR>从而，如果我们在创建两次窗口的时候，使用了同一个window 
+  class，而且第二次创建紧接着第一次窗口的销毁之后（就如同我们这个例子）的话，那么我们在第二次创建窗口之后，很可能会收到第一次创建的窗口被销毁时发过来的WM_DESTROY消息。那么会导致我们第二个窗口立即被关闭。（如果我们像这个例子这样处理了WM_DESTROY的话）</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来我们读入Shader程序，并对其进行编译和绑定（指设定GPU相关的寄存器，使其指向我们的程序在内存当中的地址，以及绑定Shader程序（在这个例子里是VS 
+Shader）输入参数的格式。（在这个例子里就是我们VertexType的两个属性: position, color）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>     // Bind the shader input variables.
+        glBindAttribLocation(g_shaderProgram, 0, "inputPosition");
+        glBindAttribLocation(g_shaderProgram, 1, "inputColor");
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这其实就是告诉GPU，怎么去看我们输入的顶点数据。（否则，从GPU来看输入就是一块内存区域，一连串的byte，不知道每个顶点的数据从哪里开始，从哪里结束，各是什么意思）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后是初始化我们的顶点数据和索引数据。索引数据并不是必须的。比如我们前一篇就没有用到索引数据。但是在一个实际的游戏当中，物体都是比较复杂的，每个顶点被多个三角面所用。所以，相对于带有许多属性的顶点数据来说，索引数据要轻量得多。与其让顶点数据不断重复出现（因为每3个顶点才能组成一个三角形，对于相邻的三角形，它们有1-2个顶点是共用的，这1-2个顶点就会重复出现），不如让索引重复出现。（顶点-索引机制就是先告诉GPU所有不同的顶点的数据，然后告诉GPU把哪些点连起来形成一个面，很像我们小时候玩的按数字连点画图游戏）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以对于正方体来说，它一共有8个不同的顶点；6个面，每个面用一条对角线切成两个三角形的话，一共是12个三角形；每个三角形需要3个索引来描述，一共也就是36个索引。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>     VertexType vertices[] = {
+   // Position:  x       y      z  Color：r    g      b
+            {{  1.0f,  1.0f,  1.0f }, { 1.0f, 0.0f, 0.0f }},
+            {{  1.0f,  1.0f, -1.0f }, { 0.0f, 1.0f, 0.0f }},
+            {{ -1.0f,  1.0f, -1.0f }, { 0.0f, 0.0f, 1.0f }},
+            {{ -1.0f,  1.0f,  1.0f }, { 1.0f, 1.0f, 0.0f }},
+            {{  1.0f, -1.0f,  1.0f }, { 1.0f, 0.0f, 1.0f }},
+            {{  1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f, 1.0f }},
+            {{ -1.0f, -1.0f, -1.0f }, { 0.5f, 1.0f, 0.5f }},
+            {{ -1.0f, -1.0f,  1.0f }, { 1.0f, 0.5f, 1.0f }},
+        };
+        uint16_t indices[] = { 1, 2, 3, 3, 2, 6, 6, 7, 3, 3, 0, 1, 0, 3, 7, 7, 6, 4, 4, 6, 5, 0, 7, 4, 1, 0, 4, 1, 4, 5, 2, 1, 5, 2, 5, 6 };
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>索引的排列有一定技巧。在当代的GPU当中，为了高速化，内部有各种各样的Cache，也就是缓存。GPU是按照索引顺序依次对顶点的坐标进行变换（一般就是乘以我们给它的MVP矩阵，把空间的点先按照我们的指示进行移动旋转，然后投射到屏幕坐标（2D）当中）。但是就如我们看到的，索引有重复。对于重复的索引所代表的顶点进行重复的计算是没有意义的。事实上，GPU会在一定程度上Cache之前计算的结果。如果后面的索引在这个Cache里面找到了，则直接利用前面计算的结果，而不重新计算。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然而，现实游戏当中的顶点是千万-亿级别的。GPU不可能有那么大的Cache全部记住。事实上能够记住的只有最近的几个而已。因此在排列这些索引的时候就很有讲究了。尽量让重复的排得近一点。这个里面有算法的，这里就先不展开，放在后面的文章讨论。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>另外需要注意的是，为了减轻GPU的负担，大多数的表面都是有正反的。对于反面朝向我们的三角形，如果没有特别指定，GPU会直接将它丢弃掉。GPU判断这个正反是通过3个顶点在投射到屏幕空间之后，按照索引的顺序去看，是逆时针顺序还是顺时针顺序判断的。因此，在我们创建索引的时候，需要将空间几何体首先展平（也就是制作贴图的时候的UV展开），然后根据在那个平面上的逆时针方向编制每个三角形的索引。</P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic3.zhimg.com/80/v2-6165346b5c6c1b3606ec1d50c70bdabe_hd.png" 
+width=690 
+data-original="https://pic3.zhimg.com/v2-6165346b5c6c1b3606ec1d50c70bdabe_r.jpg" 
+data-actualsrc="https://pic3.zhimg.com/v2-6165346b5c6c1b3606ec1d50c70bdabe_b.png" 
+data-rawheight="413" data-rawwidth="690"></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>（图片来自网络）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，接下来就是计算绑定MVP了。MVP的特点是每帧更新一次（当然也可以不变），在单帧的绘制过程当中，它是一个常数。所以，MVP在GPU当中存放的地方，也叫Constant 
+Buffer。这个Constant，就是指在一帧当中，它们是常数（同样的还有光照数据等）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// Update world matrix to rotate the model
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>rotateAngle</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">+=</SPAN> <SPAN class=n>PI</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">/</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">120</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN> <SPAN class=n>rotationMatrixY</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">16</SPAN><SPAN class=p>];</SPAN>
+    <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN> <SPAN class=n>rotationMatrixZ</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">16</SPAN><SPAN class=p>];</SPAN>
+    <SPAN class=n>MatrixRotationY</SPAN><SPAN class=p>(</SPAN><SPAN class=n>rotationMatrixY</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>rotateAngle</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>MatrixRotationZ</SPAN><SPAN class=p>(</SPAN><SPAN class=n>rotationMatrixZ</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>rotateAngle</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>MatrixMultiply</SPAN><SPAN class=p>(</SPAN><SPAN class=n>g_worldMatrix</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>rotationMatrixZ</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>rotationMatrixY</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// Generate the view matrix based on the camera's position.
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>CalculateCameraPosition</SPAN><SPAN class=p>();</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// Set the color shader as the current shader program and set the matrices that it will use for rendering.
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>glUseProgram</SPAN><SPAN class=p>(</SPAN><SPAN class=n>g_shaderProgram</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>SetShaderParameters</SPAN><SPAN class=p>(</SPAN><SPAN class=n>g_worldMatrix</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>g_viewMatrix</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>g_projectionMatrix</SPAN><SPAN class=p>);</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们这里使用了一个局部的静态变量，rotateAngle，来存储一个角度因变量（自变量是时间）。然后我们根据这个角度因变量计算出Y轴和Z轴的旋转矩阵。这两个矩阵相乘，就是我们的M矩阵。它实现了我们模型的动画。注意OpenGL是右手坐标系，这个和DX是不一样的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>同时我们根据镜头的当前姿态，计算出View矩阵。这个矩阵决定了我们观察的位置。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>而P矩阵是我们提前根据视口的状态以及摄像机的FOV计算好的。在摄像机FOV不变化，屏幕分辨率不变化，视口不变化的情况下，它是不变化的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在SetShaderParameter当中，我们查找到已经位于内存（而且是GPU可见的内存）当中的Shader的MVP变量的地址（也就是占位符的地址），把这些计算的结果覆盖上去。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>最后我们调用绘图指令，命令GPU开始一帧的绘制：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>     <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// Render the vertex buffer using the index buffer.
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=n>glDrawElements</SPAN><SPAN class=p>(</SPAN><SPAN class=n>GL_TRIANGLES</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>g_indexCount</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GL_UNSIGNED_SHORT</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>);</SPAN>
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以我们可以看到，其实一个标准的（基本）绘制流程就是CPU先设置好绘图的上下文（frame 
+buffer，显卡的状态等），然后决定画面当中绘制哪些物体，将这些物体的顶点以及索引数据调入内存的一片区域，将这个区域暴露给GPU并绑定在GPU的特定寄存器上；计算每个物体的MVP，将结果更新到绘制该物体的Shader当中；签发绘制指令，让GPU完成物体的绘制工作。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>最后我们再来看一下Shader。OpenGL的Shader是用一种称为GLSL的语言书写的。基本语法等依然是来自于C/C++语言。与DX的HLSL相比，大致上有以下区别：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">没有特殊寄存器绑定的语言扩展。但是有特殊变量，起到寄存器绑定的作用。特殊变量以"gl_"开头；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">输入输出变量都是作为全局变量进行声明，而非作为函数的参数声明；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">类型名称不同。HLSL当中的数据类型名称以基本形的扩展形式出现，如float3；而GLSL当中则以vec3这种扩展的形式出现。</LI></OL>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>////////////////////////////////////////////////////////////////////////////////
+// Filename: color.vs
+////////////////////////////////////////////////////////////////////////////////
+
+#version 400
+
+/////////////////////
+// INPUT VARIABLES //
+/////////////////////
+in vec3 inputPosition;
+in vec3 inputColor;
+
+//////////////////////
+// OUTPUT VARIABLES //
+//////////////////////
+out vec3 color;
+
+///////////////////////
+// UNIFORM VARIABLES //
+///////////////////////
+uniform mat4 worldMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+
+////////////////////////////////////////////////////////////////////////////////
+// Vertex Shader
+////////////////////////////////////////////////////////////////////////////////
+void main(void)
+{
+	// Calculate the position of the vertex against the world, view, and projection matrices.
+	gl_Position = worldMatrix * vec4(inputPosition, 1.0f);
+	gl_Position = viewMatrix * gl_Position;
+	gl_Position = projectionMatrix * gl_Position;
+
+	// Store the input color for the pixel shader to use.
+	color = inputColor;
+}
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个shader实现的就是把顶点的坐标乘以MVP矩阵，使其投射到2维视口坐标当中；另外原样拷贝输出色彩属性。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>////////////////////////////////////////////////////////////////////////////////
+// Filename: color.ps
+////////////////////////////////////////////////////////////////////////////////
+#version 400
+
+
+/////////////////////
+// INPUT VARIABLES //
+/////////////////////
+in vec3 color;
+
+
+//////////////////////
+// OUTPUT VARIABLES //
+//////////////////////
+out vec4 outputColor;
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Pixel Shader
+////////////////////////////////////////////////////////////////////////////////
+void main(void)
+{
+	outputColor = vec4(color, 1.0f);
+}
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个PS 
+Shader实现的也是色彩的原样输出。因为我们这个例子当中frame 
+buffer的格式是RGBA，而顶点色只有RGB三个分量，所以添加了一个A通道，值为1.0，意思是完全不透明。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>(-- 
+EOF --)</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>参考引用：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//www.khronos.org/opengl/wiki/Load_OpenGL_Functions" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Load 
+  OpenGL Functions</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/ARB_assembly_language" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">ARB 
+  assembly language</A><BR></LI></OL>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.png" 
+width=88 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.png" 
+data-rawheight="31" data-rawwidth="88"></FIGURE>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P></body>
+</html>

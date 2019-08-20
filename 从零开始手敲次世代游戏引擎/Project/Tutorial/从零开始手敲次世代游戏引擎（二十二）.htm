@@ -1,0 +1,337 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（二十二）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/29395579" target=_blank >原文链接</A> </EM></P>
+<P>
+<EM>
+(未修改原文） 
+
+</EM>
+</P>
+<P>
+<EM >
+ 正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接上一篇，首先继续完成Linux平台的OpenGL整合工作；然后开始场景管理方面的准备（数学库的建立）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>第一步是在Platform/Linux下面建立XcbApplication.{hpp,cpp}两个文件，并从BaseApplication派生，将我们在<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/28665581" 
+data-za-detail-view-id="1043">文章（八）</A>当中所写的使用Xcb进行窗口创建的代码统合在里面。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们从XcbApplication.{hpp,cpp}派生出OpenGLApplication.{hpp,cpp}，将我们在<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/28756646" 
+data-za-detail-view-id="1043">文章（十二）</A>当中所写的查询设备所支持的Framebuffer的格式，创建绘图context的代码统合进来。并通过External/glad自动创建的glx 
+loader，完成GLX API的加载，然后初始化我们在前一篇创建的OpenGL RHI（平台无关），完成OpenGL API的加载。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>一如既往，代码在GitHub的article_22当中，想看细节的请直接参考代码，不赘述。（可以用git 
+log查看每一步的commit，更容易理解）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在这个过程当中主要需要注意的就是glad只是加载OpenGL 
+API，并不会创建context。而加载API需要首先创建一个临时的context。这个问题我们在<A class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/28756646" 
+data-za-detail-view-id="1043">文章（十二）</A>当中已经详细阐述过。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>相比较<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/28756646" 
+data-za-detail-view-id="1043">文章（十二）</A>，我在统合的时候做的一个比较大的调整就是在创建这个临时的context之前就首先遍历设备支持的framebuffer的格式，并按照我们在创建Application的时候传入的设置（GfxConfig）选择一个尽可能接近的格式进行创建。这样我们就可以避免在加载完API之后需要销毁临时context（因为framebuffer格式不同且只能在创建的时候设置，无法在创建后更改）重新创建的问题。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，到此为止我们已经有了一个跨平台的基本图形渲染模块了，支持windows和linux两种平台，d3d12和openGL（任意版本）两种图形API。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们当然可以继续在图形模块上深挖下去。但是为了能够比较方便的检验我们的图形模块，也为了让这篇系列文章看起来更有趣一些，我们在这里将图形模块暂且搁置一下，来看看其它相关的模块。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>为了能够绘制一些更为有趣的内容，我们需要开始构建场景管理模块。场景管理模块的主要任务如下：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+style="LIST-STYLE-TYPE: none; DISPLAY: table-row">与输入输出模块对接，完成场景资源的加载；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">与内存管理模块对接，完成场景资源在内存上的展开与安排；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">与策略模块对接，向游戏逻辑提供可编程的场景对象与参数存储；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">与动画模块对接，向动画模块提供动画对象以及动画时间线数据；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">与渲染模块对接，为渲染器提供网格（mesh），材质（material），光照（lighting）等信息。</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>不过在我们实际进入场景管理模块的编写之前，我们还有一些基础性的工作需要做。比如跨平台存储系统的接口，数学库等。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们首先来看看数学库。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>有很多已有的数学库，比如我们之前用到过的DirectXMath库，或者是GLM库。它们都不错。不过，DirectXMath库是一个不太能跨平台的库；而glm库则带有浓浓的OpenGL的味道。况且，在主机平台（PlayStation系列）上也不存在这两个库。我们当然可以在Platform目录下根据不同平台wrap不同的库，就如我们wrap图形一样。但是作为专业造轮子，我觉得与其移植一个到各种平台，还不如自己写一个跨平台的。既然手敲，就一敲到底。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>其实，还有一个原因是我发现了ispc（参考引用2）这个好玩的东西。这是intel提供的一个SIMD编译器，可以以一种非常类似C语言的方式来写可以执行在llvm所支持的各种主流CPU/GPU的SIMD程序。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在之前的文章当中，我们写了一些简单的shader。其实shader就是一种SIMD程序。虽然每个shader程序自身看起来和普通的C语言程序差不多，但是实际上它是以一种并行的方式执行的。比如在A卡的GCN架构当中，每64个顶点或者像素作为一个wavefront，我们shader当中的每一条指令都是同时对这64个对象起作用的。也就是说，如果我们的shader里面做了一次乘法，实际上是对64个数据进行了同一个乘法。在N卡上也是类似的概念，只不过是32个为一组，称为一个wrap。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>而CPU从686开始也有了类似的能力。首先是为了能够解码播放诸如DVD这样的视频，CPU当中增加了128bit的MMX寄存器。后来因为非视频播放领域的需求（主要是游戏）越来越大，又出现了SSE技术。今天SSE技术已经发展到第四代，也就是SSE4，同时也出现了更宽的256bit的AVX、AVX2以及512bit的AVX512技术。（参考引用4）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>而这些技术在标准的C/C++当中并没有得到很好的支持。传统的编程语言都是串行思路，对于并列计算的支持并不好。虽然有诸如__m128等专门用于SIMD的数据类型，但是语言本身是串行的结构。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>而ispc在保留了绝大多数C语言特点，并吸收了C++语言的一些十分方便的优点的同时，对语言进行了并列计算方面的拓展。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>其实这很类似于我们写shader的时候所用的shader语言，如GLSL、HLSL、CG等。所不同的是这些都是用于GPU的，而ispc是可以跑在CPU，也可以跑在GPU。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>另外一个可以类比的是OpenCL。不过OpenCL主要也是用于GPU的。虽然现在也有一些CPU的能力。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>还有一个CUDA。这个也是用于GPU的，而且是N社的技术。用这个技术写的计算内核是以一种类似shader的方式加载的，它不容易与标准C/C++实现相互调用。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>ispc的一般介绍请参考（参考引用2）。编译方法则参考（参考引用3）。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我在编译当中遇到的问题是当使用llvm 
+5.0之上的版本（如果按照本系列安装的llvm，则是最新，写此文的时候是6.0）编译的话，会出现几个dump函数未定义的错误。这些函数是一些调试用函数，在LLVM 
+5.0当中好像过期了。而ispc目前还是根据LLVM 
+3.8写的。解决的方法有两个，一个是根据ispc的文档设置环境变量执行alloy脚本让它自己下载3.8并打patch；另一个就是自己把这几个函数补上。我采用的是后者，不过我只是定义了几个空函数，解决掉编译问题，并没有具体实现它们。（因为它们的功能只是输出调试信息）。你也可以从LLVM5.0之前的代码当中把实现拷贝进来。代码如下：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"llvm/IR/Module.h" </SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"llvm/IR/Value.h" </SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>llvm</SPAN> <SPAN class=p>{</SPAN> 
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=n>Module</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>dump</SPAN><SPAN class=p>()</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=p>{};</SPAN> 
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=n>Value</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>dump</SPAN><SPAN class=p>()</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=p>{};</SPAN> 
+<SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>记得修改ispc的make文件把这个新文件放入到要build的代码文件list里面去，然后编译ispc。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>如果是在Windows上面编译ispc，会遇到更多的问题。首先，官方教程在<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//github.com/ispc/ispc/wiki/Building-ispc%253A-Windows" 
+rel="nofollow noreferrer" target=_blank 
+data-za-detail-view-id="1043">这里</A>。但是按照本系列<A class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/28598462" 
+data-za-detail-view-id="1043">前面的文章</A>所编译的llvm是没有进行安装的。但是ispc要求安装llvm（就是要bin, 
+include, lib这种标准的文件结构）。我们可以回到llvm的out of 
+source的build目录，重新执行下面这个CMake命令指定安装目录：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>cmake -DCMAKE_INSTALL_PREFIX="E:\llvm" -DCMAKE_BUILD_TYPE=Release -Thost=x64 -G "Visual Studio 15 2017 Win64" ..\llvm</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后用Visual 
+Studio打开生成的INSTALL.vsxproj，进行编译就可以完成安装。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>注意这里面有几个坑。首先，visual 
+studio事实上提供了四套工具环境（toolchain 
+environment），一套32bit的，一套64bit的，一套32bit交叉编译64bit的，一套64bit交叉编译32bit的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>windows平台上的llvm，最终还是要依靠visual 
+studio的linker来链接本地二进制代码。使用哪个版本的linker，这个是通过上面这个-Thost来指定的。不指定（缺省）是32bit的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>而另一方面，cmake生成的visual 
+studio的工程文件的platform，这个是通过-G这个选项里面指定的。上面我们指定了Win64。这个是表示这个项目本身编译出来的代码是32bit还是64bit的。具体这个例子来说，就是生成的llvm和clang这个程序本身是32bit还是64bit的。不指定这个Win64，或者不指定-G选项，那么就生成的是32bit的。如上指定了，就是是64bit的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>但是llvm和clang本身也是编译器，因此其自身是多少bit的与其编译出来的代码是多少bit的又不是一回儿事情。我们自身项目在编译之后是多少bit的，这个是在我们自己到项目的CMakeLists.txt当中通过指定clang的编译参数决定的。具体的，可以通过比较article_22的最后两个commit观察，我们是怎么将我们的项目从原来的32bit改为64bit的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>还有一个坑，就是我们使用的visual 
+studio命令行。这个命令行缺省是使用32bit的vs工具链，并且把目标架构设定为x86。在这种情况下，虽然我们的代码会被clang编译为64bit的（因为我们给clang的参数要求它这么做），而且llvm也会使用64bit的linker，但是目标架构被设置为x86，即使我们完成上面全部，我们的命令行不对，最终linker还是会说输入的obj是64bit的但是要求输出的目标代码是32bit的，这活干不了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们在开始菜单里可以找到visual 
+studio的一个目录，展开就可以看到其实有好几个版本的命令行，编译64bit的程序我们需要在64bit的命令行（x64命令行）当中进行。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>当然，你也可以在cmake生成vs的工程之后，用IDE进行编译，那就没有命令行版本的问题了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>另外一个问题是如<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//github.com/ispc/ispc/wiki/Building-ispc%253A-Windows" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">ispc 
+wiki</A>所说，我们之前安装的GnuWin32环境当中的flex工具程序的版本比较老，不能用来编译ispc。解决的方法是单独下载一个新的版本，覆盖上去。下载链接在这里：<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//sourceforge.net/projects/winflexbison/%3Fsource%3Dtyp_redirect" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Win 
+flex-bison</A>。注意需要修改文件名，"win-bison.exe" -&gt; "bison.exe". "win-flex.exe" -&gt; 
+"flex.exe"，然后覆盖到我们之前安装的GnuWin32的bin目录当中对应的文件当中去。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>最后就是和Linux环境一样的问题，需要将我们的quick_fix.cpp包含到ispc.sln解决方案当中。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>下面是我们用ispc写的一个向量叉乘的函数：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=k style="FONT-WEIGHT: 600">export</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">CrossProduct</SPAN><SPAN class=p>(</SPAN><SPAN class=n>uniform</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN> <SPAN class=n>a</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">3</SPAN><SPAN class=p>],</SPAN> <SPAN class=n>uniform</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN> <SPAN class=n>b</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">3</SPAN><SPAN class=p>],</SPAN>
+<SPAN class=n>uniform</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN> <SPAN class=n>result</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">3</SPAN><SPAN class=p>])</SPAN> <SPAN class=p>{</SPAN>
+  <SPAN class=n>foreach</SPAN><SPAN class=p>(</SPAN><SPAN class=n>index</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN> <SPAN class=p>...</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">3</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN>
+      <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>index_a</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>((</SPAN><SPAN class=n>index</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">+</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">==</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">3</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">?</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>index</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">+</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>);</SPAN>
+      <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>index_b</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>((</SPAN><SPAN class=n>index</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">==</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">?</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">2</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>index</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>);</SPAN>
+      <SPAN class=n>result</SPAN><SPAN class=p>[</SPAN><SPAN class=n>index</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>a</SPAN><SPAN class=p>[</SPAN><SPAN class=n>index_a</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>b</SPAN><SPAN class=p>[</SPAN><SPAN class=n>index_b</SPAN><SPAN class=p>]</SPAN>
+              <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=n>a</SPAN><SPAN class=p>[</SPAN><SPAN class=n>index_b</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>b</SPAN><SPAN class=p>[</SPAN><SPAN class=n>index_a</SPAN><SPAN class=p>];</SPAN>
+  <SPAN class=p>}</SPAN>
+<SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>注意其当中也出现了uniform这个关键字。这个关键字我们在之前的shader程序当中看到过，意思是这是一个"常量"。注意这个"常量"的意思与const的意思不同，其实uniform更类似static的感觉，意思是一个wavefront/wrap当中的所有处理（thread）都是共享这一个变量。对于没有uniform关键字的变量，则是每个处理（thread）单独有这个变量的一个拷贝，互不相干。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个程序乍一看起来和普通的c语言程序好像也没啥区别，但是实际上它是并行执行的。就这个例子来说，一个三维向量当中的三个坐标：x,y,z是同时按照这个程序进行计算的。（因为128bit的向量寄存器以及运算器可以同时处理4个单精度浮点或者32bit整型）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>关于ispc，我们下一篇结合数学库的计算再详细解释。现在我们先修改一下我们的目录结构，把ispc统合进来并且让cmake可以生成build 
+我们写的ispc程序需要的脚本。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先在Framework/下面新建一个Geommath目录，把Common下面的geommath.h移过来。并且增加了swizzle的实现。（参考引用1）然后建立ispc目录，存放ispc格式的数学库代码。将上面的叉乘代码以CrossProduct.ispc的名字存在其中。建立include目录，用于存放ispc编译生成的C语言头文件。目录结构如下：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@iZphicesefdwajZ Framework<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ tree -f .
+.
+├── ./CMakeLists.txt
+├── ./Common
+│   ├── ./Common/Allocator.cpp
+│   ├── ./Common/Allocator.hpp
+│   ├── ./Common/BaseApplication.cpp
+│   ├── ./Common/BaseApplication.hpp
+│   ├── ./Common/cbuffer.h
+│   ├── ./Common/CMakeLists.txt
+│   ├── ./Common/GfxConfiguration.h
+│   ├── ./Common/GraphicsManager.cpp
+│   ├── ./Common/GraphicsManager.hpp
+│   ├── ./Common/main.cpp
+│   ├── ./Common/MemoryManager.cpp
+│   ├── ./Common/MemoryManager.hpp
+│   ├── ./Common/Mesh.h
+│   ├── ./Common/portable.h
+│   └── ./Common/shader_base.h
+├── ./GeomMath
+│   ├── ./GeomMath/CMakeLists.txt
+│   ├── ./GeomMath/geommath.h
+│   ├── ./GeomMath/include
+│   │   └── ./GeomMath/include/CrossProduct.h
+│   ├── ./GeomMath/ispc
+│   │   ├── ./GeomMath/ispc/CrossProduct.ispc
+│   │   ├── ./GeomMath/ispc/DotProduct.ispc
+│   │   ├── ./GeomMath/ispc/MulByElement.ispc
+│   │   ├── ./GeomMath/ispc/MulByElement.isph
+│   │   └── ./GeomMath/ispc/Transpose.ispc
+│   ├── ./GeomMath/libGeomMath.a
+│   └── ./GeomMath/test
+│       └── ./GeomMath/test/test.cpp
+└── ./Interface
+    ├── ./Interface/IApplication.hpp
+    ├── ./Interface/Interface.hpp
+    └── ./Interface/IRuntimeModule.hpp</CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后修改Framework下面的CMakeLists.txt，将GeomMath目录加入到编译代码树当中。在GeomMath目录当中新建CMakeLists.txt，加入如下自定义build脚本（注意windows平台下因为我们的项目目前是以32bit方式编译的，我们需要指定ispc也以32bit方式编译）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cmake style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=nb style="COLOR: rgb(0,132,255)">IF</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">WIN32</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN>        <SPAN class=nb style="COLOR: rgb(0,132,255)">SET</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">GEOMMATH_LIB_FILE</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">CMAKE_CURRENT_BINARY_DIR</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">/GeomMath.lib</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN>        <SPAN class=nb style="COLOR: rgb(0,132,255)">SET</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">ISPC_COMPILER</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">PROJECT_SOURCE_DIR</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">/External/ispc/Release/ispc.exe</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN>        <SPAN class=nb style="COLOR: rgb(0,132,255)">SET</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">ISPC_OPTIONS</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">--arch=x86</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">ELSE</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">WIN32</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN>        <SPAN class=nb style="COLOR: rgb(0,132,255)">SET</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">GEOMMATH_LIB_FILE</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">CMAKE_CURRENT_BINARY_DIR</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">/libGeomMath.a</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN>        <SPAN class=nb style="COLOR: rgb(0,132,255)">SET</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">ISPC_COMPILER</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">PROJECT_SOURCE_DIR</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">/External/ispc/ispc</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN>        <SPAN class=nb style="COLOR: rgb(0,132,255)">SET</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">ISPC_OPTIONS</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">--arch=x86-64</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">ENDIF</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">WIN32</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">SET</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">GEOMMATH_LIB_HEADER_FOLDER</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">CMAKE_CURRENT_SOURCE_DIR</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">/include</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">add_custom_command</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">OUTPUT</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">GEOMMATH_LIB_FILE</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN>
+        <SPAN class=s style="COLOR: rgb(241,64,60)">COMMAND</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">ISPC_COMPILER</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">ISPC_OPTIONS</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">-o</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">CrossProduct.o</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">-I</SPAN><SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">CMAKE_CURRENT_SOURCE_DIR</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN>
+<SPAN class=s style="COLOR: rgb(241,64,60)">h</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">CMAKE_CURRENT_SOURCE_DIR</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">/include/CrossProduct.h</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">CMAKE_CURRENT_SOURCE_DIR</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">/ispc/CrossProduc</SPAN>
+<SPAN class=s style="COLOR: rgb(241,64,60)">.ispc</SPAN>
+        <SPAN class=s style="COLOR: rgb(241,64,60)">COMMAND</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">LIBRARIAN_COMMAND</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">GEOMMATH_LIB_FILE</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">CrossProduct.o</SPAN>
+        <SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">add_custom_target</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">ISPC</SPAN>
+                   <SPAN class=s style="COLOR: rgb(241,64,60)">DEPENDS</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">GEOMMATH_LIB_FILE</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN>
+        <SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">add_library</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">GeomMath</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">STATIC</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">IMPORTED</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">GLOBAL</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">add_dependencies</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">GeomMath</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">ISPC</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set_target_properties</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">GeomMath</SPAN>
+        <SPAN class=s style="COLOR: rgb(241,64,60)">PROPERTIES</SPAN>
+        <SPAN class=s style="COLOR: rgb(241,64,60)">IMPORTED_LOCATION</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">GEOMMATH_LIB_FILE</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN>
+        <SPAN class=s style="COLOR: rgb(241,64,60)">INTERFACE_INCLUDE_DIRECTORIES</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">GEOMMATH_LIB_HEADER_FOLDER</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN>
+        <SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN></CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>最后修改Common目录下的CMakeLists.txt，让Common链接我们的GeomMath库。由于我们移动了geommath.h，我们还需要修改一下项目顶层目录下的主CMakeLists.txt当中的头文件查找路径，否则编译会出错。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>编译代码树，查看GeomMath下面是否成功生成了库文件。注意我们首先需要编译ispc。ispc的代码已经以git 
+submodule的方式放在了我们的代码树里面，可以通过执行下面的命令获取：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>D:\wenli\Source\Repos\GameEngineFromScratch&gt;git submodule update --init --recursive</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在Windows下面编译ispc不是很容易。具体的坑上面已经说过。因此我们也可以直接下载一个编译好的，下载链接在这里：<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//ispc.github.io/downloads.html" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Intel® 
+SPMD Program Compiler</A><SPAN 
+class=Apple-converted-space>&nbsp;</SPAN>。注意需要将ispc.exe放在External\ispc\Release目录下。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><I>追记：</I></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><I>在最新的article_22的分支上，我已经通过CMakeLists.txt自动检测Windows的编译环境，可以自动处理这上面所写的大部分各种坑。当所使用的命令行为x64命令行环境时，会自动编译x64版本，x86命令行环境当中自动编译x86版本。不过如果是使用cmake 
+-G "Visual Studio ..."生成项目文件的话，记得指定-G "Visual Studio 15 2017<SPAN 
+class=Apple-converted-space>&nbsp;</SPAN><B 
+style="FONT-WEIGHT: 600">Win64</B>"来生成x64的配置文件。</I></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic3.zhimg.com/80/v2-686c91ad59bf097de0baa7e1304a53e6_hd.jpg" 
+width=88 
+data-actualsrc="https://pic3.zhimg.com/v2-686c91ad59bf097de0baa7e1304a53e6_b.jpg" 
+data-rawheight="31" data-rawwidth="88"></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><B 
+style="FONT-WEIGHT: 600">参考引用</B></P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//www.cplusplus.com/forum/general/72912/" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">c++ 
+  vector swizzling</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//ispc.github.io/ispc.html" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Intel® 
+  SPMD Program Compiler User's Guide</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//github.com/ispc/ispc/wiki/" 
+  rel="nofollow noreferrer" target=_blank 
+  data-za-detail-view-id="1043">ispc/ispc</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/Streaming_SIMD_Extensions%3Fwprov%3Dsfla1" 
+  rel="nofollow noreferrer" target=_blank 
+  data-za-detail-view-id="1043">Streaming SIMD 
+Extensions</A></LI></OL></body>
+</html>

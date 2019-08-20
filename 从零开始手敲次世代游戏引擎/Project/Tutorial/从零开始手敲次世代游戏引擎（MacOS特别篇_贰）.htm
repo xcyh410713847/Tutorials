@@ -1,0 +1,492 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（MacOS特别篇 贰）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P>
+<EM>
+<A href="https://zhuanlan.zhihu.com/p/31003710" target=_blank >
+原文链接 
+
+</A>
+</EM></P>
+<P>
+<EM >
+ (未修改原文）</EM> </P>
+<P >
+
+<EM>
+正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>上一篇我们实现了在macOS上面的编译。但是我们采用的并不是macOS的原生接口，因此获得的OpenGL 
+Context所支持的API版本也被限制到2.1版本。这显然是不够的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因此，接下来我们来尝试使用macOS的原生图形接口 
+—— Cocoa，来完成OpenGL Context的创建工作。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>Cocoa是基于Objective-C的一套Apple的独有系统。Objective-C是一种比较古老的语言，是C语言的超集，但是与C++语言又非常不同。作者在写这篇文章之前并没有接触过Objective-C语言，所以这两天查阅了大量的资料来“临时抱佛脚”。这里需要特别感谢<SPAN 
+class=Apple-converted-space>&nbsp;</SPAN><SPAN><SPAN class=UserLink></P>
+<DIV class=Popover style="POSITION: relative; DISPLAY: inline-block">
+<DIV aria-haspopup=true aria-expanded=false id=Popover10-toggle 
+aria-owns=Popover10-content><A class=UserLink-link 
+style="TEXT-DECORATION: none; COLOR: rgb(23,81,153)" 
+href="https://www.zhihu.com/people/01ecc4f5601e517e308385d78dd67d08" 
+target=_blank data-za-detail-view-id="1045" 
+data-za-detail-view-element_name="User">@袁全伟</A></DIV></DIV></SPAN></SPAN><SPAN 
+class=Apple-converted-space>&nbsp;</SPAN>分享的相关资料整理。我把这些资料会同我自己查阅到的资料都列在了参考引用当中。
+<P></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>实际写下来，感觉Cocoa类似Windows平台上的MFC，或者.NET的感觉，封装还是比较彻底的。好处当然是非常简单易用，但是同时也就意味着很多的细节被隐藏。在我早年学习MFC的时候，想要实现同时期Office所提供的一些很酷的控件效果，就发现非常的不容易。后来学习了Win32 
+API，发现就能很方便的实现了。这两天对Cocoa的突击学习又让我感觉似乎一下子回到了20多年前，找到了那种有力无处使的感觉。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>但是到目前为止我还没有能够找到在macOS上比Cocoa更为底层的API接口。所以我们就将就着用吧。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>Cocoa里面至少包含了两个Kit：AppKit和UIKit。AppKit提供了应用程序的框架结构，而UIKit提供了UI组件。最为方便地了解Cocoa的方法是使用XCode生成一个基于Cocoa的应用程序项目，这个过程与使用Visual 
+Studio的向导创建项目非常类似，仅仅需要点击几次鼠标，输入应用程序名什么的，就能够生成一个基本的应用程序（含窗体）的基本结构。</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic4.zhimg.com/80/v2-2f33df6b5afe23d3df058b51181c5ecf_hd.jpg" 
+width=1672 
+data-original="https://pic4.zhimg.com/v2-2f33df6b5afe23d3df058b51181c5ecf_r.jpg" 
+data-actualsrc="https://pic4.zhimg.com/v2-2f33df6b5afe23d3df058b51181c5ecf_b.jpg" 
+data-rawheight="1008" data-rawwidth="1672"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">Xcode启动页面。选择Create 
+a new Xcode project</FIGCAPTION></FIGURE><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 2.24em 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic4.zhimg.com/80/v2-9b41e5469a45417abcba8eb9e22ca2e7_hd.jpg" 
+width=1472 
+data-original="https://pic4.zhimg.com/v2-9b41e5469a45417abcba8eb9e22ca2e7_r.jpg" 
+data-actualsrc="https://pic4.zhimg.com/v2-9b41e5469a45417abcba8eb9e22ca2e7_b.jpg" 
+data-rawheight="1062" data-rawwidth="1472"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">应用程序向导界面。先选择macOS，然后选择Cocoa 
+App</FIGCAPTION></FIGURE><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 2.24em 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic3.zhimg.com/80/v2-b5b0418e4b19efd9d9d71f72c56df966_hd.jpg" 
+width=1466 
+data-original="https://pic3.zhimg.com/v2-b5b0418e4b19efd9d9d71f72c56df966_r.jpg" 
+data-actualsrc="https://pic3.zhimg.com/v2-b5b0418e4b19efd9d9d71f72c56df966_b.jpg" 
+data-rawheight="1058" data-rawwidth="1466"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">输入产品名Hello 
+Cocoa，Language选Objective-C，取消所有勾选了的复选框，保持项目为最简状态</FIGCAPTION></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这样一个基本的Cocoa应用（含窗体）项目就生成好了。目录结构大致如下：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>.
+├── Hello<SPAN class=se style="COLOR: rgb(241,64,60)">\ </SPAN>Cocoa
+│   ├── AppDelegate.h
+│   ├── AppDelegate.m
+│   ├── Assets.xcassets
+│   │   └── AppIcon.appiconset
+│   │       └── Contents.json
+│   ├── Base.lproj
+│   │   └── MainMenu.xib
+│   ├── Hello_Cocoa.entitlements
+│   ├── Info.plist
+│   └── main.m
+└── Hello<SPAN class=se style="COLOR: rgb(241,64,60)">\ </SPAN>Cocoa.xcodeproj
+    ├── project.pbxproj
+    └── project.xcworkspace
+        └── contents.xcworkspacedata</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>程序的主入口是 
+main.m，AppDelegate.h和AppDelegate.m定义了应用程序代理类，也就是可以对标准的Cocoa 
+Application进行扩展的地方。Assets.xcassets当中是应用程序的一些资源文件，比如图标什么的。Base.lproj当中是被称为InterfaceBuilder工具的界面定义文件，就是所谓的WYSIWYG（What 
+You See Is What You 
+Get，所见即所得）的图形界面编辑器文件。Hello_Cocoa.entitlements和Info.plist，这两个都是XML格式的类似manifest的文件，用来向操作系统或者是APN等提供程序相关的meta 
+data的。而Hello Cocoa.xcodeproj目录当中的则是Xcode的项目文件。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们可以继续在Xcode当中编译这个项目并执行。如果采用命令行，那么编译的命令如下（假设我们在项目根目录）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-console style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>chenwenlideMBP:Hello Cocoa chenwenli$ xcodebuild -project Hello\ Cocoa.xcodeproj/ build</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后执行</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>chenwenlideMBP:Hello Cocoa chenwenli$ build/Release/Hello<SPAN class=se style="COLOR: rgb(241,64,60)">\ </SPAN>Cocoa.app/Contents/MacOS/Hello<SPAN class=se style="COLOR: rgb(241,64,60)">\ </SPAN>Cocoa</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>就可以看到我们的第一个Cocoa窗口了：</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic4.zhimg.com/80/v2-13476da78f9349dab270b2a6dbcfd0ff_hd.jpg" 
+width=1184 
+data-original="https://pic4.zhimg.com/v2-13476da78f9349dab270b2a6dbcfd0ff_r.jpg" 
+data-actualsrc="https://pic4.zhimg.com/v2-13476da78f9349dab270b2a6dbcfd0ff_b.jpg" 
+data-rawheight="988" data-rawwidth="1184" data-caption=""></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然而，我们需要如何将它和我们之前的代码结合到一起呢？有没有可能将Objective-C和C++混合进行编程呢？</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>答案是可以的。Objective-C在经过编译之后，生成的二进制文件是与C语言有着同样的二进制接口的。也就是有二进制兼容性（Swift也是一样）。只不过，Object-C的面向对象模型与C++不同，不能简单地将两者等同起来（也就是运行时间库是不一样的）。在macOS全面采用clang作为编译工具之后，由于llvm中间层的存在，Objective-C与C++的互换变得更为方便，甚至出现了Objective-C++这种可以将两者同时写在一个文件当中的“编程语言”（新版本gcc也支持）。不过这里要注意，实际上Objective-C++并不是一种真正的新的语言，书写在源代码当中的Objective-C代码和C++代码其实是相对独立的被编译处理之后又链接在一起的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，那么接下来让我们基于Xcode所生成的模版，按照我们自己所写引擎的架构和逻辑，编写Cocoa版本的Application和OpenGL 
+Context创建代码。（将Objective-C代码嵌入到我们的C++代码当中）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先我们将XcbApplication.{hpp,cpp}分别拷贝并改名为CocoaApplication.{h,mm}。mm是Objective-C++源代码的后缀。然后编辑如下：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>CocoaApplication.h</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"BaseApplication.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;Cocoa/Cocoa.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">CocoaApplication</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>BaseApplication</SPAN>
+    <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=n>CocoaApplication</SPAN><SPAN class=p>(</SPAN><SPAN class=n>GfxConfiguration</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>config</SPAN><SPAN class=p>)</SPAN>
+            <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>BaseApplication</SPAN><SPAN class=p>(</SPAN><SPAN class=n>config</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{};</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Initialize</SPAN><SPAN class=p>();</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Finalize</SPAN><SPAN class=p>();</SPAN>
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// One cycle of the main loop
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Tick</SPAN><SPAN class=p>();</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=n>NSWindow</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>m_pWindow</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>};</SPAN>
+<SPAN class=p>}</SPAN>
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//cocoaapplication.mm/" 
+rel="nofollow noreferrer" target=_blank 
+data-za-detail-view-id="1043">CocoaApplication.mm</A></P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-objective-c++ style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>#include &lt;string.h&gt;
+#include "CocoaApplication.hpp"
+#include "MemoryManager.hpp"
+#include "GraphicsManager.hpp"
+#include "SceneManager.hpp"
+#include "AssetLoader.hpp"
+
+#import &lt;AppDelegate.h&gt;
+#import &lt;WindowDelegate.h&gt;
+
+using namespace My;
+
+namespace My {
+    GfxConfiguration config(8, 8, 8, 8, 24, 8, 0, 960, 540, "Game Engine From Scratch (MacOS Cocoa)");
+    IApplication* g_pApp                = static_cast&lt;IApplication*&gt;(new CocoaApplication(config));
+    GraphicsManager* g_pGraphicsManager = static_cast&lt;GraphicsManager*&gt;(new GraphicsManager);
+    MemoryManager*   g_pMemoryManager   = static_cast&lt;MemoryManager*&gt;(new MemoryManager);
+    AssetLoader*     g_pAssetLoader     = static_cast&lt;AssetLoader*&gt;(new AssetLoader);
+    SceneManager*    g_pSceneManager    = static_cast&lt;SceneManager*&gt;(new SceneManager);
+}
+
+int CocoaApplication::Initialize()
+{
+    int result = 0;
+
+    [NSApplication  sharedApplication];
+
+    // Menu
+    NSString* appName = [NSString stringWithFormat:@"%s", m_Config.appName];
+    id menubar = [[NSMenu alloc] initWithTitle:appName];
+    id appMenuItem = [NSMenuItem new];
+    [menubar addItem: appMenuItem];
+    [NSApp setMainMenu:menubar];
+
+    id appMenu = [NSMenu new];
+    id quitMenuItem = [[NSMenuItem alloc] initWithTitle:@"Quit"
+        action:@selector(terminate:)
+        keyEquivalent:@"q"];
+    [appMenu addItem:quitMenuItem];
+    [appMenuItem setSubmenu:appMenu];
+
+    id appDelegate = [AppDelegate new];
+    [NSApp setDelegate: appDelegate];
+    [NSApp activateIgnoringOtherApps:YES];
+    [NSApp finishLaunching];
+
+    NSInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                      NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;
+
+    m_pWindow = [[NSWindow alloc] initWithContentRect:CGRectMake(0, 0, m_Config.screenWidth, m_Config.screenHeight) styleMask:style backing:NSBackingStoreBuffered defer:NO];
+    [m_pWindow setTitle:appName];
+    [m_pWindow makeKeyAndOrderFront:nil];
+    id winDelegate = [WindowDelegate new];
+    [m_pWindow setDelegate:winDelegate];
+
+    return result;
+}
+
+void CocoaApplication::Finalize()
+{
+    [m_pWindow release];
+}
+
+void CocoaApplication::Tick()
+{
+    NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny
+    untilDate:nil
+    inMode:NSDefaultRunLoopMode
+    dequeue:YES];
+
+    switch([(NSEvent *)event type])
+    {
+        case NSEventTypeKeyDown:
+            NSLog(@"Key Down Event Received!");
+            break;
+        default:
+            break;
+    }
+    [NSApp sendEvent:event];
+    [NSApp updateWindows];
+    [event release];
+}
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这里需要特别说明的就是我们去掉了[NSApp 
+run]，取而代之在Tick()当中使用了我们自己的EventLoop。这是为了保证我们的主循环在我们自己所写的main函数（最终会在驱动模块）当中。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后在Platform/Darwin/CMakeLists.txt当中添加如下编译规则：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cmake style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=c style="COLOR: rgb(153,153,153); FONT-STYLE: italic"># MyGameEngineCocoa
+</SPAN><SPAN class=c style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">add_executable</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">MyGameEngineCocoa</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">MACOSX_BUNDLE</SPAN>
+        <SPAN class=s style="COLOR: rgb(241,64,60)">CocoaApplication.mm</SPAN> 
+        <SPAN class=s style="COLOR: rgb(241,64,60)">AppDelegate.m</SPAN>
+        <SPAN class=s style="COLOR: rgb(241,64,60)">WindowDelegate.m</SPAN>
+    <SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">find_library</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">COCOA_LIBRARY</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">Cocoa</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">required</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">target_link_libraries</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">MyGameEngineCocoa</SPAN> 
+        <SPAN class=s style="COLOR: rgb(241,64,60)">Common</SPAN> 
+        <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">OPENGEX_LIBRARY</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN> 
+        <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">OPENDDL_LIBRARY</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN> 
+        <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">XG_LIBRARY</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN> 
+        <SPAN class=o style="FONT-WEIGHT: 600">${</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">COCOA_LIBRARY</SPAN><SPAN class=o style="FONT-WEIGHT: 600">}</SPAN> 
+        <SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">__add_xg_platform_dependencies</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">MyGameEngineCocoa</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>执行build.sh之后，就会在./build/Platform/Darwin/MyGameEngineCocoa.app/Contents/MacOS/MyGameEngineCocoa当中生成我们的可执行文件。执行它就可以看到我们的窗体了：</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic3.zhimg.com/80/v2-c512c39d4404eb8d3f1aacbedecb55be_hd.jpg" 
+width=2144 
+data-original="https://pic3.zhimg.com/v2-c512c39d4404eb8d3f1aacbedecb55be_r.jpg" 
+data-actualsrc="https://pic3.zhimg.com/v2-c512c39d4404eb8d3f1aacbedecb55be_b.jpg" 
+data-rawheight="1348" data-rawwidth="2144" data-caption=""></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>看上去不错哦。然后让我们加入对于OpenGL的初始化代码。首先根据参考引用*4，创建两个新文件，GLView.{h,mm}，从NSView派生出我们自己的View类：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>GLView.h</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-objective-c style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#import &lt;Cocoa/Cocoa.h&gt;
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">@interface</SPAN> <SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">GLView</SPAN> : <SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">NSView</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">@private</SPAN>
+    <SPAN class=n>NSOpenGLContext</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>_openGLContext</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=n>NSOpenGLPixelFormat</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>_pixelFormat</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=k style="FONT-WEIGHT: 600">@end</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//glview.mm/" 
+rel="nofollow noreferrer" target=_blank 
+data-za-detail-view-id="1043">GLView.mm</A></P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-objective-c style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#import "GLView.h"
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#import &lt;OpenGL/gl.h&gt;
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">@implementation</SPAN> <SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">GLView</SPAN>
+
+<SPAN class=p>-</SPAN> <SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">id</SPAN><SPAN class=p>)</SPAN><SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">initWithFrame:</SPAN><SPAN class=p>(</SPAN><SPAN class=n>NSRect</SPAN><SPAN class=p>)</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">frameRect</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">pixelFormat:</SPAN><SPAN class=p>(</SPAN><SPAN class=n>NSOpenGLPixelFormat</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=p>)</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">format</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=nb style="COLOR: rgb(0,132,255)">self</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>[</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">super</SPAN> <SPAN class=nl>initWithFrame</SPAN><SPAN class=p>:</SPAN><SPAN class=n>frameRect</SPAN><SPAN class=p>];</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">self</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+
+
+<SPAN class=p>-</SPAN> <SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=p>)</SPAN><SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">drawRect:</SPAN><SPAN class=p>(</SPAN><SPAN class=n>NSRect</SPAN><SPAN class=p>)</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">dirtyRect</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=p>[</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">super</SPAN> <SPAN class=nl>drawRect</SPAN><SPAN class=p>:</SPAN><SPAN class=n>dirtyRect</SPAN><SPAN class=p>];</SPAN>
+
+    <SPAN class=p>[</SPAN><SPAN class=n>_openGLContext</SPAN> <SPAN class=n>makeCurrentContext</SPAN><SPAN class=p>];</SPAN>
+
+    <SPAN class=n>glClearColor</SPAN><SPAN class=p>(</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>,</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>,</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glClear</SPAN><SPAN class=p>(</SPAN><SPAN class=n>GL_COLOR_BUFFER_BIT</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=p>[</SPAN><SPAN class=n>_openGLContext</SPAN> <SPAN class=n>flushBuffer</SPAN><SPAN class=p>];</SPAN>   
+<SPAN class=p>}</SPAN>
+
+
+
+<SPAN class=p>-</SPAN> <SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">instancetype</SPAN><SPAN class=p>)</SPAN><SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">initWithFrame:</SPAN><SPAN class=p>(</SPAN><SPAN class=n>NSRect</SPAN><SPAN class=p>)</SPAN><SPAN class=nv style="COLOR: rgb(0,132,255)">frameRect</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=nb style="COLOR: rgb(0,132,255)">self</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>[</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">super</SPAN> <SPAN class=nl>initWithFrame</SPAN><SPAN class=p>:</SPAN><SPAN class=n>frameRect</SPAN><SPAN class=p>];</SPAN>
+
+    <SPAN class=n>NSOpenGLPixelFormatAttribute</SPAN> <SPAN class=n>attrs</SPAN><SPAN class=p>[]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>{</SPAN>
+        <SPAN class=n>NSOpenGLPFAOpenGLProfile</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>NSOpenGLProfileVersion3_2Core</SPAN><SPAN class=p>,</SPAN>
+        <SPAN class=n>NSOpenGLPFAColorSize</SPAN><SPAN class=p>,</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">32</SPAN><SPAN class=p>,</SPAN>
+        <SPAN class=n>NSOpenGLPFADepthSize</SPAN><SPAN class=p>,</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">16</SPAN><SPAN class=p>,</SPAN>
+        <SPAN class=n>NSOpenGLPFADoubleBuffer</SPAN><SPAN class=p>,</SPAN>
+        <SPAN class=n>NSOpenGLPFAAccelerated</SPAN><SPAN class=p>,</SPAN>
+        <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN>
+    <SPAN class=p>};</SPAN>
+
+    <SPAN class=n>_pixelFormat</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>[[</SPAN><SPAN class=n>NSOpenGLPixelFormat</SPAN> <SPAN class=n>alloc</SPAN><SPAN class=p>]</SPAN> <SPAN class=nl>initWithAttributes</SPAN><SPAN class=p>:</SPAN><SPAN class=n>attrs</SPAN><SPAN class=p>];</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN><SPAN class=p>(</SPAN><SPAN class=n>_pixelFormat</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">==</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">nil</SPAN><SPAN class=p>)</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=n>NSLog</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">@"No valid matching OpenGL Pixel Format found"</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">self</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>}</SPAN>
+
+    <SPAN class=n>_openGLContext</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>[[</SPAN><SPAN class=n>NSOpenGLContext</SPAN> <SPAN class=n>alloc</SPAN><SPAN class=p>]</SPAN> <SPAN class=nl>initWithFormat</SPAN><SPAN class=p>:</SPAN><SPAN class=n>_pixelFormat</SPAN> <SPAN class=nl>shareContext</SPAN><SPAN class=p>:</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">nil</SPAN><SPAN class=p>];</SPAN>
+
+
+    <SPAN class=p>[[</SPAN><SPAN class=n>NSNotificationCenter</SPAN> <SPAN class=n>defaultCenter</SPAN><SPAN class=p>]</SPAN> <SPAN class=nl>addObserver</SPAN><SPAN class=p>:</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">self</SPAN>
+                                            <SPAN class=nl>selector</SPAN><SPAN class=p>:</SPAN><SPAN class=k style="FONT-WEIGHT: 600">@selector</SPAN><SPAN class=p>(</SPAN><SPAN class=nl>_surfaceNeedsUpdate</SPAN><SPAN class=p>:)</SPAN>
+                                                <SPAN class=nl>name</SPAN><SPAN class=p>:</SPAN><SPAN class=n>NSViewGlobalFrameDidChangeNotification</SPAN>
+                                               <SPAN class=nl>object</SPAN><SPAN class=p>:</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">self</SPAN><SPAN class=p>];</SPAN>
+
+    <SPAN class=p>[</SPAN><SPAN class=n>_openGLContext</SPAN> <SPAN class=n>makeCurrentContext</SPAN><SPAN class=p>];</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">self</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+
+<SPAN class=p>-</SPAN> <SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=p>)</SPAN><SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">lockFocus</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=p>[</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">super</SPAN> <SPAN class=n>lockFocus</SPAN><SPAN class=p>];</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN><SPAN class=p>([</SPAN><SPAN class=n>_openGLContext</SPAN> <SPAN class=n>view</SPAN><SPAN class=p>]</SPAN><SPAN class=o style="FONT-WEIGHT: 600">!=</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">self</SPAN><SPAN class=p>)</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=p>[</SPAN><SPAN class=n>_openGLContext</SPAN> <SPAN class=nl>setView</SPAN><SPAN class=p>:</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">self</SPAN><SPAN class=p>];</SPAN>
+    <SPAN class=p>}</SPAN>
+     <SPAN class=p>[</SPAN><SPAN class=n>_openGLContext</SPAN> <SPAN class=n>makeCurrentContext</SPAN><SPAN class=p>];</SPAN>
+
+<SPAN class=p>}</SPAN>
+
+<SPAN class=p>-</SPAN> <SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=p>)</SPAN><SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">update</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=p>[</SPAN><SPAN class=n>_openGLContext</SPAN> <SPAN class=n>update</SPAN><SPAN class=p>];</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=p>-</SPAN> <SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=p>)</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">_surfaceNeedsUpdate:</SPAN><SPAN class=p>(</SPAN><SPAN class=n>NSNotification</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=p>)</SPAN> <SPAN class=nv style="COLOR: rgb(0,132,255)">notification</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=p>[</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">self</SPAN> <SPAN class=n>update</SPAN><SPAN class=p>];</SPAN>
+
+<SPAN class=p>}</SPAN>
+
+
+
+
+<SPAN class=k style="FONT-WEIGHT: 600">@end</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后再添加两个文件，CocoaOpenGLApplication.{h,mm}，从CocoaApplication派生出带有OpenGL 
+Context（GLView）的应用类型，在CocoaApplication的初始化之后，将GLView的实例替换到窗口客户区：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-objective-c style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>CocoaOpenGLApplication</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Initialize</SPAN><SPAN class=p>()</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>result</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=n>result</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>CocoaApplication</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Initialize</SPAN><SPAN class=p>();</SPAN>
+
+    <SPAN class=n>GLView</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>view</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>[[</SPAN><SPAN class=n>GLView</SPAN> <SPAN class=n>alloc</SPAN><SPAN class=p>]</SPAN> <SPAN class=nl>initWithFrame</SPAN><SPAN class=p>:</SPAN><SPAN class=n>CGRectMake</SPAN><SPAN class=p>(</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>m_Config</SPAN><SPAN class=p>.</SPAN><SPAN class=n>screenWidth</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>m_Config</SPAN><SPAN class=p>.</SPAN><SPAN class=n>screenHeight</SPAN><SPAN class=p>)];</SPAN>
+
+    <SPAN class=p>[</SPAN><SPAN class=n>m_pWindow</SPAN> <SPAN class=nl>setContentView</SPAN><SPAN class=p>:</SPAN><SPAN class=n>view</SPAN><SPAN class=p>];</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>result</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>最后是修改CMakeLists.txt。已经很长了，不赘述了。最后运行效果如题图。完成的代码在mac2分支当中。</P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><B 
+style="FONT-WEIGHT: 600">参考引用</B></P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//www.khronos.org/opengl/wiki/Getting_Started%23macOS" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Getting 
+  Started - OpenGL Wiki</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//www.khronos.org/opengl/wiki/Platform_specifics%3A_macOS" 
+  rel="nofollow noreferrer" target=_blank 
+  data-za-detail-view-id="1043">Programming OpenGL on macOS</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//stackoverflow.com/questions/2997333/creating-a-cocoa-application-without-nib-files" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Creating 
+  a Cocoa application without NIB files</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//developer.apple.com/opengl/" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">OpenGL 
+  for macOS</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//developer.apple.com/library/content/documentation/GraphicsImaging/Conceptual/OpenGL-MacProgGuide/opengl_drawing/opengl_drawing.html" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Drawing 
+  to a Window or View</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//cmake.org/cmake/help/v3.0/prop_tgt/MACOSX_BUNDLE.html" 
+  rel="nofollow noreferrer" target=_blank 
+  data-za-detail-view-id="1043">MACOSX_BUNDLE - CMake 3.0.2 
+  Documentation</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//developer.apple.com/documentation/appkit/nsapplicationdelegate" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">AppKit | 
+  Apple Developer Documentation</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//cocoawithlove.com/2009/01/demystifying-nsapplication-by.html" 
+  rel="nofollow noreferrer" target=_blank 
+  data-za-detail-view-id="1043">Demystifying NSApplication by recreating 
+  it</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//www.cocoawithlove.com/2010/09/minimalist-cocoa-programming.html" 
+  rel="nofollow noreferrer" target=_blank 
+  data-za-detail-view-id="1043">Minimalist Cocoa programming</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/Objective-C" 
+  rel="nofollow noreferrer" target=_blank 
+  data-za-detail-view-id="1043">Objective-C - Wikipedia</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//philjordan.eu/article/mixing-objective-c-c%2B%2B-and-objective-c%2B%2B" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Mixing 
+  Objective-C, C++ and Objective-C++: an Updated 
+Summary</A></LI></OL></body>
+</html>

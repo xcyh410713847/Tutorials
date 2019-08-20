@@ -1,0 +1,219 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（二十八）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/29933257" target=_blank >原文链接</A> </EM></P>
+<P>
+<EM>
+(未修改原文）
+</EM></P>
+<P>
+<EM>正文开始：</EM>
+
+</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>现在让我们开始按照上一篇的设计，在Framework/Common下面分别创建SceneObject.hpp和SceneNode.hpp，进行场景物体与场景结构的定义。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在上一篇当中，我们将场景分解为表述结构和空间位置信息的场景图，以及表述具体行为性质的场景对象两个大分类。这样的分类方式的最大好处是将场景对象的固有属性与其在场景当中的配置解耦出来，从而可以用较少的场景物体构建较为复杂的场景。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所谓在场景当中的配置，包括空间和时间两个方面的概念。空间是指对场景对象所做的平移、旋转、缩放；而时间则是指沿着时间轴对对象所作的改变，也就是动画。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>为了从代码上进行这样的保证，我们首先创建一个不可复制的场景对象基类BaseSceneObject，并将其构造函数声明为protected模式，以防止直接创建其实例∶</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>   <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">BaseSceneObject</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>Guid</SPAN> <SPAN class=n>m_Guid</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>SceneObjectType</SPAN> <SPAN class=n>m_Type</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// can only be used as base class
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>            <SPAN class=n>BaseSceneObject</SPAN><SPAN class=p>(</SPAN><SPAN class=n>Guid</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>guid</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>SceneObjectType</SPAN> <SPAN class=n>type</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>m_Guid</SPAN><SPAN class=p>(</SPAN><SPAN class=n>guid</SPAN><SPAN class=p>)</SPAN>
+ <SPAN class=n>m_Type</SPAN><SPAN class=p>(</SPAN><SPAN class=n>type</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{};</SPAN>
+            <SPAN class=n>BaseSceneObject</SPAN><SPAN class=p>(</SPAN><SPAN class=n>Guid</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;&amp;</SPAN> <SPAN class=n>guid</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>SceneObjectType</SPAN> <SPAN class=n>type</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>m_Guid</SPAN><SPAN class=p>(</SPAN><SPAN class=nl>std</SPAN><SPAN class=p>:</SPAN>
+<SPAN class=n>move</SPAN><SPAN class=p>(</SPAN><SPAN class=n>guid</SPAN><SPAN class=p>)),</SPAN> <SPAN class=n>m_Type</SPAN><SPAN class=p>(</SPAN><SPAN class=n>type</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{};</SPAN>
+            <SPAN class=n>BaseSceneObject</SPAN><SPAN class=p>(</SPAN><SPAN class=n>BaseSceneObject</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;&amp;</SPAN> <SPAN class=n>obj</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>m_Guid</SPAN><SPAN class=p>(</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>move</SPAN><SPAN class=p>(</SPAN><SPAN class=n>obj</SPAN><SPAN class=p>.</SPAN><SPAN class=n>m_</SPAN>
+<SPAN class=n>uid</SPAN><SPAN class=p>)),</SPAN> <SPAN class=n>m_Type</SPAN><SPAN class=p>(</SPAN><SPAN class=n>obj</SPAN><SPAN class=p>.</SPAN><SPAN class=n>m_Type</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{};</SPAN>
+            <SPAN class=n>BaseSceneObject</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">operator</SPAN><SPAN class=o style="FONT-WEIGHT: 600">=</SPAN><SPAN class=p>(</SPAN><SPAN class=n>BaseSceneObject</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;&amp;</SPAN> <SPAN class=n>obj</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">this</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>m_Guid</SPAN>
+<SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>move</SPAN><SPAN class=p>(</SPAN><SPAN class=n>obj</SPAN><SPAN class=p>.</SPAN><SPAN class=n>m_Guid</SPAN><SPAN class=p>);</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">this</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>m_Type</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>obj</SPAN><SPAN class=p>.</SPAN><SPAN class=n>m_Type</SPAN><SPAN class=p>;</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=k style="FONT-WEIGHT: 600">this</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+
+     <SPAN class=k style="FONT-WEIGHT: 600">private</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// no default constructor
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>            <SPAN class=n>BaseSceneObject</SPAN><SPAN class=p>()</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">delete</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// can not be copied
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>            <SPAN class=n>BaseSceneObject</SPAN><SPAN class=p>(</SPAN><SPAN class=n>BaseSceneObject</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>obj</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">delete</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>BaseSceneObject</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">operator</SPAN><SPAN class=o style="FONT-WEIGHT: 600">=</SPAN><SPAN class=p>(</SPAN><SPAN class=n>BaseSceneObject</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>obj</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">delete</SPAN><SPAN class=p>;</SPAN>
+
+     <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>Guid</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>GetGuid</SPAN><SPAN class=p>()</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=p>{</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>m_Guid</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+
+     <SPAN class=k style="FONT-WEIGHT: 600">friend</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>ostream</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">operator</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN><SPAN class=p>(</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>ostream</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>out</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>BaseSceneOb</SPAN>
+<SPAN class=n>ect</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>obj</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=p>{</SPAN>
+            <SPAN class=n>out</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"SceneObject"</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>endl</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>out</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"-----------"</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>endl</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>out</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"GUID: "</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>obj</SPAN><SPAN class=p>.</SPAN><SPAN class=n>m_Guid</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>endl</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>out</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"Type: "</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>obj</SPAN><SPAN class=p>.</SPAN><SPAN class=n>m_Type</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>endl</SPAN><SPAN class=p>;</SPAN>
+
+         <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>out</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=p>}</SPAN>
+    <SPAN class=p>};</SPAN>
+
+</CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>GUID是Global 
+Unique 
+ID的意思，是由某种哈希算法计算出的一串数字。在正常的情况（按照算法规范进行正常计算生成的情况）下，每次计算所得数字是全球唯一的。这个算法在很多平台上都有实现，但是API的名字等不一样。我这里是使用了GitHub上面一个名为crossguid的项目的代码，它把各个平台的API包了一下，形成了一个统一的接口。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们这里之所以需要为每个场景物体导入一个GUID的理由是，在大型的游戏开发当中，场景物体的数目十分庞大，而且经常会发生修改。如何高效地对这些资源文件进行管理在这样的开发环境当中会成为一个很显著的问题。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们的代码使用git进行托管。场景资源文件当然也可以采用git进行托管。但是代码自身是一种严密的逻辑表述，如果将几个版本的代码混在一起，那么编译很可能无法通过，从而能够快速地发现这样的问题；但是如果是将不同版本的资源文件混在一起，那么往往并不会出现任何编译性质的错误，游戏也往往能够正常运行，只是看起来“似乎不太对”。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这是因为大多数的资源只是离散的二进制采样，当中并不含有逻辑关系。如上一篇所说，我们在运行时当中需要定义场景节点和节点关系，构成场景图，就是为了描述这种关系。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>但是运行时当中的场景图并不会有版本的概念，也不会有某个资源是由谁在什么时候进行了修改这样的记录。这对于管理来说是很不方便的。而且，美术也不可能在修改一个资源之后重新编译一遍游戏来确认效果，每改一次拿个U盘拷贝给程序替换，来来往往几次两边谁也说不清现在游戏里的到底是换了还是没换，换了几次，这样等等许多问题。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以在3A级别的游戏开发当中，一般都会有一个资源管理系统。这个系统，实际上就是一个数据库，存储了资源的不同版本，还存储了资源之间的关系。这个外部系统与我们程序内部的场景对象之间需要一种映射关系。我们这里导入的GUID就是可以用作这个目的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>当然，如果仅仅是用作映射关系，其实任意的具有唯一性的ID都是可以的，并不一定需要GUID。使用GUID还有另外一个原因，就是可以像git的版本管理那样每个人都可以在本地有一个自己的版本库，同时又可以随时将本地的变更推送到中心库而无需担心ID撞车。这对于像美术资源这样的大文件是很重要的。因为如果每次都需要将如此大的文件从中心库迁入迁出，将会耗费很多的时间。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，接下来让我们从这个基类派生出一系列场景对象的结构。首先是顶点数组∶</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>   <SPAN class=n>ENUM</SPAN><SPAN class=p>(</SPAN><SPAN class=n>VertexDataType</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN>
+        <SPAN class=n>kVertexDataTypeFloat</SPAN>    <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"FLOT"</SPAN><SPAN class=n>_i32</SPAN><SPAN class=p>,</SPAN>
+        <SPAN class=n>kVertexDataTypeDouble</SPAN>   <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"DOUB"</SPAN><SPAN class=n>_i32</SPAN>
+    <SPAN class=p>};</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">SceneObjectVertexArray</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>BaseSceneObject</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN> <SPAN class=n>m_Attribute</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>uint32_t</SPAN>    <SPAN class=n>m_MorphTargetIndex</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>VertexDataType</SPAN> <SPAN class=n>m_DataType</SPAN><SPAN class=p>;</SPAN>
+
+            <SPAN class=k style="FONT-WEIGHT: 600">union</SPAN> <SPAN class=p>{</SPAN>
+                <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN>      <SPAN class=n>m_pDataFloat</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">double</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN>     <SPAN class=n>m_pDataDouble</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=p>};</SPAN>
+            <SPAN class=n>size_t</SPAN>      <SPAN class=n>m_szData</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>通常来说，每个顶点都是一个结构体（复合数据类型），包含多个被称为“属性”的字段。常见的属性有∶</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">位置属性∶这是必须的。代表了顶点的三维坐标。可以是xyz三维向量，也可以是xyzw四维向量。如果是xyz三维向量，那么隐含w为1；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">法线属性∶一般为xyz三维向量，代表了顶点处法线的指向。由于在实时渲染系统当中采用顶点方式记录几何体，任何一个表面的法线方向其实是通过组成这个表面的顶点的法线进行组合计算得到的。法线方向一般主要用于光照计算；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">切线属性∶指顶点处的切线。一般为四维向量，用于比较高级的光照计算；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">顶点色∶即顶点的颜色。RGB或者RGBA。在我们之前的文章当中所渲染出的彩色的三角形和正方体的颜色，就是通过顶点色插值得到的。在早期的游戏当中，因为内存十分有限，无法使用大量的贴图，顶点色就成了着色的重要手段；但是如今的游戏基本上全部都是依靠贴图指定颜色，所以顶点色真正作为颜色使用的场景已经越来越少了。事实上顶点色现在更多地被用作一种逐顶点指定的计算参数传递给shader，用来实现一些顶点动画或者特效；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">贴图坐标（UV）∶虽然用得最多的是二维贴图，但是三维贴图是存在的。比如要制作雪地上脚印的效果，虽然实际项目当中从各方面因素考虑仍然是多采用deco贴图和位移贴图来模拟凹陷的脚印，但是实际上最理想的是使用三维贴图来展现。</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>组织这些属性有两种方式，也就是所谓的AOS方式和SOA方式。AOS是Array 
+Of 
+Structure的缩写，这是我们在平常编程的时候常用的模型。就是将上面这些属性作为成员组织在一个结构体当中，代表一个顶点，再把结构体组织到数组里面，代表一组顶点。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>AOS方式的好处是将同一个顶点相关的数据放在了内存相邻的区域，这样当我们循环遍历每一个顶点并对其进行计算的时候，该顶点的各个属性的数据很可能会全部位于CPU的高速缓存当中（请回忆我们之前讨论内存管理的文章当中的相关叙述），因此会大大加快处理的速度。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然而，GPU是并行处理的。A卡将每64个顶点打包成一个处理对象（wavefront），N卡把每32个顶点打包成一个处理对象（wrap）进行处理。当我们使用某个属性进行计算的时候，GPU会一次读取所有参与计算的顶点的这个属性。如果采用AOS的方式，那么不同顶点的同一个属性在内存空间当中地址是不连续的，就好像一条虚线那样，按照固定的间隔（其它属性所占据的存储空间）跳着存放的。那么也就是说，GPU的高速缓存所读取进来的连续数据当中，相当一部分将可能是当前处理所不需要的，也就是高速缓存利用率会降低，GPU会耗费更多的时间等数据。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以，对于并行计算的情况，SOA往往要更为有效。SOA就是Struct 
+Of Array的缩写，就是先把不同顶点的同一个属性以数组的方式进行组织，再把这些不同的属性的数组组织到一个结构体当中。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们上面这个定义就是采用的SOA形式。我们定义的这个结构，代表了一组顶点的某个属性。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>顶点数据可以采用单精度浮点或者双精度浮点。一般来说在游戏当中单精度浮点就足够了。大部分消费级显卡的双精度浮点的计算能力都是很差的，这就是为什么会有专门的云计算用显卡，卖得死贵死贵的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>还有一个需要说明的是我们并没有直接在结构体里存储数据，而是采用了指针。这里面有两个原因∶</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">在实际读入数据之前，我们无法预知数据的大小。不同的对象顶点数也是不同的；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">由于CPU和GPU的异构性，内存往往也划分为主存和显存，且有着严格的区别。由于GPU无法自行完成资源的加载，大部分数据需要由CPU加载进主存然后复制到显存，在内存上会出现两份拷贝。这是很浪费的一件事情，我们需要尽可能地在填充显存之后释放CPU这边的内存占用。</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来是定义存储索引到数据结构∶</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>   <SPAN class=n>ENUM</SPAN><SPAN class=p>(</SPAN><SPAN class=n>IndexDataType</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN>
+        <SPAN class=n>kIndexDataTypeInt16</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"_I16"</SPAN><SPAN class=n>_i32</SPAN><SPAN class=p>,</SPAN>
+        <SPAN class=n>kIndexDataTypeInt32</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"_I32"</SPAN><SPAN class=n>_i32</SPAN><SPAN class=p>,</SPAN>
+    <SPAN class=p>};</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">SceneObjectIndexArray</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>BaseSceneObject</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>uint32_t</SPAN>    <SPAN class=n>m_MaterialIndex</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>size_t</SPAN>      <SPAN class=n>m_RestartIndex</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>IndexDataType</SPAN> <SPAN class=n>m_DataType</SPAN><SPAN class=p>;</SPAN>
+
+            <SPAN class=k style="FONT-WEIGHT: 600">union</SPAN> <SPAN class=p>{</SPAN>
+                <SPAN class=n>uint16_t</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN>   <SPAN class=n>m_pDataI16</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=n>uint32_t</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN>   <SPAN class=n>m_pDataI32</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=p>};</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>索引比较简单。一般来说，为了节省内存带宽，我们应该尽量使用16bit的索引。也就是说，每次绘制（drawcall，GPU的单次绘图指令）最多只能有65535个顶点。这当然是不太够的，因为当今3A游戏的主要人物一般会有20万左右的多边形，即使是按照triangle 
+strip的方式理想编排，最少也需要20万个顶点。所以这就是说，需要进行模型的切割，把大的模型切割到64K顶点之内的模型碎片。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>事实上，对于复杂的模型，其往往也是包含了到不同材质的引用。比如一个人物的模型，其裸露的脸部和身上着衣的部分的材质就很可能是不同的。况且考虑到动画的需要，我们需要将模型分割为可动的部分和不可动的部分。我们在用maya或者3dmax等DCC工具进行建模的时候，往往会将顶点进行分组，指定不同的材质或者子材质，这些都是很自然很好的分割依据。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以我们在上面的结构当中也包括了一个材质索引，用来指定这组顶点所组成的几何体对应的材质。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>那么是不是模型拆得越碎越好呢？答案是否定的。事实上，为进行一次drawcall是要进行很多准备工作的。在我们之前D3d12的代码当中我们可以看到，CPU需要跑一大堆代码去生成各种GPU运行命令所需要的环境，包括GPU实际执行的命令都是CPU每次去一条一条写进去的。这个开销是很大的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以，为了节省内存带宽我们需要尽量使用16bit的索引，但同时为了减少drawcall我们又需要尽量在每次调用drawcall的时候绘制尽可能多的顶点。好的实践是我们需要尽量把同一个材质的顶点进行合并，因为相同材质的顶点（多边形）是可以用同一套GPU执行环境（上下文）去绘制的。打个通俗的比方，想象一下画家作画的过程∶如果我们按照人们通常认知的方式去绘制的话，那么我们会需要不断更换颜色，也就是洗笔，蘸颜料，绘制，再洗笔，再蘸别的颜料，这是很没有效率的。所以画家往往会准备很多支笔，省去一部分这里的开销。但是如果是工业印刷，其实是将图事先分解为CYMK等几个颜色，然后像盖章那样啪啪啪4下就完成了的。GPU绘制画面的过程同样，如果能够一次绘制完场景当中所有相同材质的网格再转而绘制其它，将会带来绘制效率方面的提升。因此我们需要在将模型拆解为碎片之后，再将它们按照材质重新组合起来，尽量放在一个索引数组里。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然而，这样重组出的模型碎片在空间上往往是不连续的。比如仙侠类游戏男主人公两只手上的护腕，他们是相同的材质，但是在空间上是不连续的。这就造成在使用诸如triangle 
+strip这种索引方式的时候，需要在不连续的地方给出重置信号，这就是上面m_RestartIndex的含义。它指定了一个特殊的index值，当index数组当中出现这个值的时候，说明一个连续的triangle 
+strip已经结束，需要重头开始一个新的triangle strip。这就允许我们在一个顶点数组当中存储多个空间上并不连续的mesh。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，既然我们有了顶点数组和索引数组，接下来我们可以定义网格了∶</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>   <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">SceneObjectMesh</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>BaseSceneObject</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>vector</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>SceneObjectIndexArray</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN>  <SPAN class=n>m_IndexArray</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>vector</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>SceneObjectVertexArray</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>m_VertexArray</SPAN><SPAN class=p>;</SPAN>
+
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN>        <SPAN class=n>m_bVisible</SPAN>      <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">true</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN>        <SPAN class=n>m_bShadow</SPAN>       <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">false</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN>        <SPAN class=n>m_bMotionBlur</SPAN>   <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">false</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>SceneObjectMesh</SPAN><SPAN class=p>()</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>BaseSceneObject</SPAN><SPAN class=p>(</SPAN><SPAN class=n>SceneObjectType</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>kSceneO</SPAN>
+<SPAN class=n>bjectTypeMesh</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{};</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>网格可以包括1个以上的顶点数组，和0个以上的索引数组。如我们上面所说，每个顶点数组只是代表了一个顶点属性，所以档有多个顶点属性的时候，就需要相同数目的顶点数组。而索引数组可以不存在，这时表示按照顶点数组当中的顶点出现顺序进行绘制即可。而索引数组多于1个的情况是表明这些顶点可以按照不同的拓扑结构组成不同的几何体，或者是包含不同的材质的多个几何体表面。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，这篇的篇幅已经很长了，我们暂告一个段落。下一篇继续介绍材质，灯光和摄像机，以及场景图（节点图）。</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.jpg" 
+width=88 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.jpg" 
+data-rawheight="31" data-rawwidth="88"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">本作品采用知识共享署名 
+4.0 国际许可协议进行许可。</body>
+</html>

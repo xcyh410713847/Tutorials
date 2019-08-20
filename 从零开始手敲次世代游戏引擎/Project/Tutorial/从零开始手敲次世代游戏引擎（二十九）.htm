@@ -1,0 +1,165 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（二十九）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P>
+<EM>
+<A href="https://zhuanlan.zhihu.com/p/30344564" target=_blank >
+原文链接
+
+</A>
+</EM></P>
+<P>
+<EM >
+ (未修改原文）</EM></P>
+<P >
+
+<EM>
+正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好的，我们继续进行场景结构的编写。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>如同上一篇预告的，首先让我们来编写存储材质的数据结构。首先上代码∶</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>  <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">SceneObjectMaterial</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>BaseSceneObject</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>Color</SPAN>       <SPAN class=n>m_BaseColor</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>Parameter</SPAN>   <SPAN class=n>m_Metallic</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>Parameter</SPAN>   <SPAN class=n>m_Roughness</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>Normal</SPAN>      <SPAN class=n>m_Normal</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>Parameter</SPAN>   <SPAN class=n>m_Specular</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>Parameter</SPAN>   <SPAN class=n>m_AmbientOcclusion</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>SceneObjectMaterial</SPAN><SPAN class=p>()</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>BaseSceneObject</SPAN><SPAN class=p>(</SPAN><SPAN class=n>SceneObjectType</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>kSceneObjectTypeMaterial</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{};</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>材质的模型有很多种，在游戏当中常用的是经典的高光漫反射模型，还有近年流行的基于物理的PBR模型。上面这个例子就是PBR模型。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>计算机图形学当中严格意义上的材质模型是指物体表面对于来自各个方向的光线的反射折射以及吸收的数学模型。多为解析形式或者隐函数模式。游戏当中使用的材质的含义则更为宽泛，而且一般为离散采样样本数据和合成公式的模式，有的时候也被称为是基于图像的渲染方式（Image 
+Based Rendering）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这是因为游戏作为一种交互式数字艺术作品，并不严格追求所渲染的图像的正确性。而基于解析计算的渲染方法目前计算量都很大，而且包含很多逻辑判断与分支，难以实现GPU的批量化计算。而基于图像的渲染则是将事先准备好的图片（贴图）按照一定的规律进行组合输出结果，这种方式特别适合并行计算，而且结果“看起来”也能够相当地不错。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>使用过近代DCC工具的人应该都知道，DCC工具当中的材质，除了极少的一部分之外，大多也是基于图像的。这种材质的特点是，可以为材质的每个属性（或者说通道）指定一个固定的值，或者是一张贴图。通过巧妙地组合这些贴图和通道，可以形成各种各样十分有趣或者十分逼真的材质效果，比如生锈、浸润、污渍、蚀刻、风化、毛绒、伤疤等等。所以我们的材质属性也需要支持单值输入的情况，和贴图输入的情况。这是通过定义如下的复合数据类型来实现的∶</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>  <SPAN class=k style="FONT-WEIGHT: 600">template</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=k style="FONT-WEIGHT: 600">typename</SPAN> <SPAN class=n>T</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">struct</SPAN> <SPAN class=n>ParameterMap</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=n>bUsingSingleValue</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">true</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">union</SPAN> <SPAN class=n>_ParameterMap</SPAN> <SPAN class=p>{</SPAN>
+            <SPAN class=n>T</SPAN> <SPAN class=n>Value</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>shared_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>Image</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>Map</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=p>};</SPAN>
+    <SPAN class=p>};</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=n>ParameterMap</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>Vector4f</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>Color</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=n>ParameterMap</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>Vector3f</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>Normal</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=n>ParameterMap</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN>    <SPAN class=n>Parameter</SPAN><SPAN class=p>;</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好，接下来让我们看看灯光。游戏当中常用的灯光有泛光灯（也叫点状光源，白炽灯）、射灯、天光等。泛光灯是向其周边360度球形空间均匀辐射光线的灯，也就是无指向的灯；射灯是向特定方向进行一个光锥照射的灯，比如舞台上打的那种追光灯，或者汽车的大灯；天光则是平行光源。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>无论是哪种灯，首先都有个自身的亮度或者说光线密度属性，然后会有一个光线衰减函数。虽然在物理学当中，光线是按照距离的平方倍进行衰减的，但是在游戏制作当中这样的衰减很不容易控制，而且往往衰减得过快。所以，如同我们在很多DCC工具当中看到的，我们往往是通过指定一个近裁剪平面，一个远裁剪平面和一个近似的光衰减函数来控制光照的效果。所以我们的光照基类的定义如下∶</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>  <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">SceneObjectLight</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>BaseSceneObject</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>Color</SPAN>       <SPAN class=n>m_LightColor</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN>       <SPAN class=n>m_Intensity</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>AttenFunc</SPAN>   <SPAN class=n>m_LightAttenuation</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN>       <SPAN class=n>m_fNearClipDistance</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN>       <SPAN class=n>m_fFarClipDistance</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN>        <SPAN class=n>m_bCastShadows</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// can only be used as base class of delivered lighting objects
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>            <SPAN class=n>SceneObjectLight</SPAN><SPAN class=p>()</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>BaseSceneObject</SPAN><SPAN class=p>(</SPAN><SPAN class=n>SceneObjectType</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>kSceneObj</SPAN>
+<SPAN class=n>ectTypeLight</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{};</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这里面上面没有提到的就是m_bCastShadows。这是用来标识光源是否会产生阴影的。阴影的形成因为要做以光源为视点的场景投影与排序，对于实时渲染来说是很昂贵的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们如果用过近代的一些游戏引擎，我们会看到除了上面这些属性之外，还会有诸如光源是否会移动等诸多其它属性。这些属性更多的是为了优化光照计算性能存在的，我们在今后相应的地方再进行拓展，这里先不介绍了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来我们就可以从这个基类进行派生，定义各种具体的光源类型了∶</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>  <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">SceneObjectOmniLight</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>SceneObjectLight</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">using</SPAN> <SPAN class=n>SceneObjectLight</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>SceneObjectLight</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>};</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">SceneObjectSpotLight</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>SceneObjectLight</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN>   <SPAN class=n>m_fConeAngle</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN>   <SPAN class=n>m_fPenumbraAngle</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">using</SPAN> <SPAN class=n>SceneObjectLight</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>SceneObjectLight</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>可以看到泛光灯最简单，基本就是基类本身；射灯则多了两个光锥顶角相关的参数。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这里可能有人会问，射灯的方向的定义是不是被遗漏了？回答∶是的，但是是故意的。我们的之前的设计是，场景对象当中只保存场景对象固有的属性，而与场景结构或者空间位置相关的参数是保存在场景节点而不是场景对象当中的。在游戏当中往往会采用追光灯的设计，也就是跟着某个对象跑的射灯。但是被跟随的对象的空间位置只有场景节点和场景图这一级的信息当中才有，将这个信息写到场景对象里面是不合适的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>关于光照函数我们则是如下定义的∶</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>  <SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">float</SPAN> <SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>AttenFunc</SPAN><SPAN class=p>)(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN> <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* Intensity */</SPAN><SPAN class=p>,</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">float</SPAN> <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* Distance */</SPAN><SPAN class=p>);</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>就是一个输入为光源的强度和到光源的距离，输出为光照强度的函数的指针。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>最后是摄像机的部分了。摄像机和射灯某种意义类似，位置和方向我们放在节点当中处理，作为场景对象主要需要记录的是纵横比，近裁剪距离和远裁剪距离。对于透视相机还需要记录fov，即视角。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>  class SceneObjectCamera : public BaseSceneObject
+    {
+        protected:
+            float m_fAspect;
+            float m_fNearClipDistance;
+            float m_fFarClipDistance;
+        public:
+            SceneObjectCamera() : BaseSceneObject(SceneObjectType::kSceneObjectTypeCamera) {};
+    };
+
+    class SceneObjectOrthogonalCamera : public SceneObjectCamera
+    {
+    };
+
+    class SceneObjectPerspectiveCamera : public SceneObjectCamera
+    {
+        protected:
+            float m_fFov;
+    };</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>正交相机是指没有透视到相机，一般用于在3D空间当中制作2D游戏。而透视相机的fov则是表示了相机的视场角，大的视场角相当于广角相机，小的则相当于长焦。当然，仅仅是这样的话是没有景深效果的。景深效果是由于凸透镜成像造成的，而透视相机只是相当于在正交相机上多乘一个仿射矩阵（透视矩阵）P，每个像素依然是单根光线采样决定其颜色值，是和理想的小孔成像一样的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，到这里场景对象的主要结构就完成了。对比前面的设计，我们还有诸如变形对象，贴图对象，动画对象，矩阵对象等没有完成。不过这些对于渲染一个基本的场景来说是不需要或者可以用别的方法代替的，就不在这里一一表述了。下面我们进入场景结构（场景图），并且对接OpenGEX，导入一个实际的场景并进行画面的渲染。</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.jpg" 
+width=88 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.jpg" 
+data-rawheight="31" data-rawwidth="88"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">本作品采用知识共享署名 
+4.0 国际许可协议进行许可。</body>
+</html>

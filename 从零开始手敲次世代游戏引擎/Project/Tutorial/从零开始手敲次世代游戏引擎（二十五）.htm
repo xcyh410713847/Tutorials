@@ -1,0 +1,189 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（二十五）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/29803502" target=_blank >原文链接</A> </EM></P>
+<P>
+<EM>
+(未修改原文） 
+</EM></P>
+<P>
+<EM>正文开始：</EM>
+
+</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接上一篇，我们首先来看一下基本的文件IO操作。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>对于C语言标准库提供了两种文件io的API。一种是C标准库当中提供的f*系列的，带有缓存功能的API，如fopen/fclose；一种是POSIX标准的，不带有缓存功能的API，如open/close。不过，如同我们之前说过，windows并不是POSIX系统，因此windows所提供的POSIX类型的API并不是系统调用，而是win32 
+API的简单封装。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>由于我们目前主要是进行游戏资源文件的加载。这种加载基本上是只读性质的，而且大部分是顺序读取，所以带有缓存的f*系列API就比较适合我们的需要了。而且f*系列的API是属于C标准库的一部分，可移植性较好。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们当然可以在场景管理模块里面直接使用f*系列API来加载资源。但是这么做有以下几个问题:</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">虽然f*系列API是C的标准库的一部分，具有良好的可移植性，但是在一些平台上它并不是系统原生的API，所提供的功能十分有限且优化不足。比如在windows平台上有功能更为强大的win32 
+  API，而在PS4上有可以将多个文件的读写进行统一调度优化的库。如果在资源管理模块当中直接调用f*系列的API，那么如果之后我们希望直接使用平台原生的API，会变得困难；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">各个平台对于文件路径的要求和处理有微妙的区别。比如windows平台有盘符的概念；而Linux平台整个文件系统在一个树状结构当中；而PSV的文件系统在路径前还有媒体标识符；PS4的文件系统虽然类似Linux系统但是是在一个严格的沙箱当中的虚拟路径，与文件实际存放路径不同。这些细节与场景管理本身并没有太多关系，应该放在一个独立的地方进行处理；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">f*系列API所提供的是同步阻塞型的文件访问。如果我们在场景管理模块当中直接使用这些API，那么场景管理模块在进行文件操作的时候将会失去响应。场景管理模块是与图形渲染模块，动画模块，游戏逻辑模块等紧密协作的一个模块，因此我们应该将其设计为一个快速响应的模块，不能有这样的阻塞；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">如我们上一篇文章所分析的，场景模块是比较复杂的。为了降低其复杂度，增加其可维护性，我们应该尽量把松耦合的功能从其中剥离出来形成单独的模块。</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>基于这样的基本设计，我们定义了一个资源加载模块，AssetLoader，专门负责资源文件的加载工作。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">AssetLoader</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>IRuntimeModule</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">~</SPAN><SPAN class=n>AssetLoader</SPAN><SPAN class=p>()</SPAN> <SPAN class=p>{};</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Initialize</SPAN><SPAN class=p>();</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Finalize</SPAN><SPAN class=p>();</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Tick</SPAN><SPAN class=p>();</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>AssetFilePtr</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">enum</SPAN> <SPAN class=n>AssetOpenMode</SPAN> <SPAN class=p>{</SPAN>
+            <SPAN class=n>MY_OPEN_TEXT</SPAN>   <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// Open In Text Mode
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>            <SPAN class=n>MY_OPEN_BINARY</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>,</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// Open In Binary Mode
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=p>};</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">enum</SPAN> <SPAN class=n>AssetSeekBase</SPAN> <SPAN class=p>{</SPAN>
+            <SPAN class=n>MY_SEEK_SET</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// SEEK_SET
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>            <SPAN class=n>MY_SEEK_CUR</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>,</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// SEEK_CUR
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>            <SPAN class=n>MY_SEEK_END</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">2</SPAN>  <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// SEEK_END
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=p>};</SPAN>
+
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">AddSearchPath</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>path</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">RemoveSearchPath</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>path</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">FileExists</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>filePath</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=n>AssetFilePtr</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">OpenFile</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>name</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>AssetOpenMode</SPAN> <SPAN class=n>mode</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=n>Buffer</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">SyncOpenAndReadText</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>filePath</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=n>size_t</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">SyncRead</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>AssetFilePtr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>fp</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>Buffer</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>buf</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">CloseFile</SPAN><SPAN class=p>(</SPAN><SPAN class=n>AssetFilePtr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>fp</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=n>size_t</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">GetSize</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>AssetFilePtr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>fp</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=n>int32_t</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Seek</SPAN><SPAN class=p>(</SPAN><SPAN class=n>AssetFilePtr</SPAN> <SPAN class=n>fp</SPAN><SPAN class=p>,</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">long</SPAN> <SPAN class=n>offset</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>AssetSeekBase</SPAN> <SPAN class=n>where</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=kr style="FONT-WEIGHT: 600">inline</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN> <SPAN class=n>SyncOpenAndReadTextFileToString</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>fileN</SPAN>
+<SPAN class=n>me</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=p>{</SPAN>
+            <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN> <SPAN class=n>result</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>Buffer</SPAN> <SPAN class=n>buffer</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>SyncOpenAndReadText</SPAN><SPAN class=p>(</SPAN><SPAN class=n>fileName</SPAN><SPAN class=p>);</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>content</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">reinterpret_cast</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*&gt;</SPAN><SPAN class=p>(</SPAN><SPAN class=n>buffer</SPAN><SPAN class=p>.</SPAN><SPAN class=n>m_pData</SPAN><SPAN class=p>);</SPAN>
+
+            <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>content</SPAN><SPAN class=p>)</SPAN>
+            <SPAN class=p>{</SPAN>
+                <SPAN class=n>result</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN><SPAN class=p>(</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>move</SPAN><SPAN class=p>(</SPAN><SPAN class=n>content</SPAN><SPAN class=p>));</SPAN>
+            <SPAN class=p>}</SPAN>
+
+            <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>result</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=p>}</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">private</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>vector</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>m_strSearchPath</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>};</SPAN>
+<SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>目前这个定义当中还只是包括了同步版本的API，因此这个类看起来还只是一个wrapper，似乎没有必要将其定义为一个RunTimeModule。但是为了实现上面所说的让文件操作不要阻塞调用线程，我们有两个选项∶</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">使用多线程。我们需要在AssetLoader当中创建工作线程池，将对同步阻塞型f*系列API的调用放到工作线程当中去执行；</LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">使用异步文件IO 
+  API。实质上这也是多线程，只不过线程是由操作系统创建。</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>选项1的好处是我们可以拥有更为细致的控制权，可以精细安排这些线程的优先级以及执行方式等。缺点是我们需要写更多的代码去维护这个线程池的管理，并且因为操作系统缺乏关于我们要进行的工作的足够的信息，可能无法提供文件读写整体方面的优化；</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>选项二的好处是代码比较简洁，不用进行线程的管理，并且如果我们一次将多个文件读写请求发送给操作系统，可能会得到操作系统在读取方式方面深度的优化，比如通过妥善安排读取的顺序减少硬盘寻道的时间。然而缺点首先是我们可能比较难以控制文件读取的顺序，而且异步文件IO的API并没有得到标准化，在各个平台上API长得很不一样，甚至不支持。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>但是不管我们支持上述两种选项的哪一种，因为是异步操作，就意味着我们的AssetLoader会以一种不同于资源管理模块的节奏进行工作。所以我们将它也定义为一个RuntimeModule。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>另外一个需要注意的点就是AssetFilePtr。它被定义成为一个空指针类型。这是因为在不同的平台API当中文件的描述子的定义是不同的。我们用空指针类型来抽象整合这种不同。不过需要注意的是AssetFilePtr并不是资源的唯一识别子。资源的唯一识别子是在游戏当中用来索引资源的唯一标识，它应该具备平台无关性和时序无关性；而AssetFilePtr显然这两条都不符合。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>况且，这里面还有一个隐含的问题值得我们思考，那就是游戏资源（Asset）与游戏资源文件（Asset 
+File）是否一定是一对一的关系。如果我们将场景物体考虑为Asset的单位，比如游戏当中的主角人物，那么因为一个人物会包括模型、材质、贴图、动画、声音等许多素材，而这些素材往往是以不同格式的文件进行存放的，那么显然这不是一种一对一的关系。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>另一方面，如同我们在上一篇文章所述，为了加快资源的读取速度，我们往往最终会将资源文件进行打包合并，从而多个资源可能会对应同一个资源文件，这也不是一种一对一的关系。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因此，很显然地，我们需要在某个地方进行资源与资源文件之间的映射。我们甚至需要导入或者自定义一种资源描述语法（比如URI），来唯一描述某项资源，以及资源之间的联系。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>不过在此之前，我们还有一些基础性工作需要做。因为我们的AssetLoader目前只能完成文件内容的加载（以文本文件模式或者二进制模式），并不能解析文件的内容。我们下一篇将介绍如何为我们的AssetLoader设计各种文件格式的解析器（decoder）。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本文当中涉及到的AssetLoader的实现代码在GitHub的<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//github.com/netwarm007/GameEngineFromScratch/tree/article_25%3Ffiles%3D1" 
+rel="nofollow noreferrer" target=_blank 
+data-za-detail-view-id="1043">article_25</A>当中。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><B 
+style="FONT-WEIGHT: 600">参考引用</B></P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A class=" external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//man7.org/linux/man-pages/man7/aio.7.html" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+  class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">http://</SPAN><SPAN 
+  class=visible>man7.org/linux/man-page</SPAN><SPAN class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">s/man7/aio.7.html</SPAN><SPAN 
+  class=ellipsis></SPAN></A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A class=" external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//msdn.microsoft.com/en-us/library/aa365683.aspx" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+  class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">https://</SPAN><SPAN 
+  class=visible>msdn.microsoft.com/en-u</SPAN><SPAN class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">s/library/aa365683.aspx</SPAN><SPAN 
+  class=ellipsis></SPAN></A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A class=" external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//isocpp.org/wiki/faq/serialization%23serialize-text-format" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+  class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">https://</SPAN><SPAN 
+  class=visible>isocpp.org/wiki/faq/ser</SPAN><SPAN class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">ialization#serialize-text-format</SPAN><SPAN 
+  class=ellipsis></SPAN></A></LI></OL>
+<P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.jpg" 
+width=88 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.jpg" 
+data-rawheight="31" data-rawwidth="88" data-caption=""></FIGURE></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P></body>
+</html>

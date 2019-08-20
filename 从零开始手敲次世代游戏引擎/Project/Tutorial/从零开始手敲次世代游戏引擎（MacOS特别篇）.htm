@@ -1,0 +1,343 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（MacOS特别篇）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/30721683" target=_blank >原文链接 </A></EM></P>
+<P>
+<EM>
+(未修改原文）
+</EM></P>
+<P>
+<EM>正文开始：</EM>
+
+</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>双十一快到了，不知道大家今年准备剁手购买什么。作者一直心念着之前提出想要在MacOS上面学习本教程的同学，双十一剁手入了一个MacPro本，摸了2天来更新这篇文章。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>（在此之前作者从来未使用过Mac。所以写的不对请不吝赐教）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>根据资料（*1）显示，MacOS从版本10开始基于一个被称为XNU的内核(Darwin达尔文系统）。这个内核是基于BSD系统的。BSD是一种Unix系统，而Linux是模仿Unix系统开发的。所以我们之前写的Linux版本应该是可以比较容易地在MacOS上面编译的。是不是这样，有多容易，我们实际来试一下。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先我们需要安装编译环境。之前我们说过，MacOSX之后标准是使用clang。但是这个环境缺省是没有安装到系统当中的。最为简单的安装方法是安装Xcode。我们可以在Apple 
+Store里面方便的找到它并安装。</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic4.zhimg.com/80/v2-f7236ba442042cb51e6afa158b9b3773_hd.jpg" 
+width=1020 
+data-original="https://pic4.zhimg.com/v2-f7236ba442042cb51e6afa158b9b3773_r.jpg" 
+data-actualsrc="https://pic4.zhimg.com/v2-f7236ba442042cb51e6afa158b9b3773_b.jpg" 
+data-rawheight="446" data-rawwidth="1020" data-size="normal" 
+data-caption=""></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因为我们是要工作在命令行，安装完成之后，我们需要打开命令行窗口安装Xcode的命令行工具。在MacOS打开一个程序最快的方法是使用Spotlight搜索，我们按下（<B 
+style="FONT-WEIGHT: 600">⌘</B>）键和空格键，然后输入term，按下回车键。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后输入</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>xcode-select --install</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后根据屏幕提示完成安装。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来是安装git/cmake等工具。在Mac上面安装GNU软件似乎一般有两个方式，一个是通过一个叫做<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//brew.sh/" 
+rel="nofollow noreferrer" target=_blank 
+data-za-detail-view-id="1043">HomeBrew</A>的包管理，而另外一个则是使用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//www.macports.org/install.php" 
+rel="nofollow noreferrer" target=_blank 
+data-za-detail-view-id="1043">MacPort</A>。我首先是试了一下HomeBrew，这个好像是基于ruby的，里面可以用的包很少，比如找不到libxcb。所以后来我又换成了MacPort。MacPort就是Port的Mac版，而Port是BSD系统当中的包管理器，就相当于Linux系统当中的APT或者YUM工具。只不过Port是下载源代码到本地进行编译安装的，而不是直接下载二进制包进行安装。（所以我们需要先安装Xcode命令行工具）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>MacPort的安装方法在MacPort的网站上有详细介绍。需要注意的就是必须根据Mac系统的版本下载对应的包。不同的版本之间是不兼容的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>装好MacPort之后，在命令行运行</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>sudo port selfupdate
+sudo port install git git-lfs cmake</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>就可以完成相关工具的安装。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们就可以尝试checkout我们的代码并进行编译了。首先我们尝试编译我们的第三方依赖库，crossguid。运行项目根目录下的build_crossguid.sh，直接编译成功了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来我们尝试编译OpenGEX，运行项目根目录下的build_opengex.sh，也是一次成功。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们编译我们的引擎。这里主要有几个问题：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">首先是找不到ispc。这主要是由于我们CMake文件的写法导致的（CMAKE_SYSTEM_NAME变成了Darwin而不是Linux）。调整之后找到。可以直接使用Linux下编译的ispc的二进制文件，也可以在MacOS下面重新编译一个。编译的脚本在External/src/ispc下面（如果是空目录请在项目根目录执行<SPAN 
+  class=Apple-converted-space>&nbsp;</SPAN><BR>git submodule update --init 
+  External/src/ispc<BR>获取源代码和编译脚本）只不过需要注意的是Xcode缺省安装的toolchain似乎并不包括llvm相关的库，而编译ispc需要这些库。我的做法是直接用项目根目录下的build_llvm_clang.sh脚本重新完整编译了一套llvm工具出来。应该也可以在Xcode里面安装这些库，只不过我没有去调查了；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">提示找不到xcb、X11等库。这个问题又可以分两个方面：</LI>
+  <OL 
+  style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol2 0; PADDING-RIGHT: 0px">
+    <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">没有X11 
+    Server。MacOS是使用的自己的图形服务器（Quartz）和图形库（Cocoa）。在老的版本当中也同时提供了X11 Server，但是好像从OS 
+    X开始X11被剥离到一个名为XQuartz的项目当中，并在GitHub开源了（*2）。所以需要安装XQuartz。安装过程请参考GitHub相关项目页面；</LI>
+    <LI 
+    style="LIST-STYLE-TYPE: none; DISPLAY: table-row">没有xcb、X11等库。这个通过port安装就可以了。需要安装的包名称为：<BR>xorg-libxcb<BR>xorg-libX11</LI></OL></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了。进行了这些准备之后，代码就可以完成编译了（执行build.sh）。跑一下Test目录下的测试，大部分没有问题，但是GeomMathTest的部分结果出现问题。如果在cmake之后指定‘-G 
+“Xcode”’，则最后的可执行文件的链接会出错，提示libGeomMath.a的符号表有问题。经过调试发现是我们生成libGeomMath.a的时候只是使用ar工具将obj文件压成了库，但是没有执行ranlib工具来更新库当中的符号表。如下修改Framework/Geommath/ispc/CMakeLists.txt之后问题得到解决：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-diff style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>add_custom_command(OUTPUT ${GEOMMATH_LIB_FILE}
+         COMMAND ${CMAKE_AR} ${ISPC_LIBRARIAN_OPTIONS} ${OBJECTS}
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        COMMAND ${CMAKE_RANLIB} ${GEOMMATH_LIB_FILE}
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>         COMMAND rm -v ${OBJECTS}
+         DEPENDS ${OBJECTS}
+         )
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>最后的问题是编译虽然通过了，但是执行./build/Platform/Darwin/MyGameEngineOpenGL会直接发生段错误而强行关闭。如下：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>chenwenlideMacBook-Pro:GameEngineFromScratchPrivate chenwenli$ ./build/Platform/Darwin/MyGameEngineOpenGL 
+Segmentation fault: <SPAN class=m style="COLOR: rgb(0,132,255)">11</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>使用lldb工具进行调试，发现错误信息如下：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>Process <SPAN class=m style="COLOR: rgb(0,132,255)">51269</SPAN> stopped
+* thread <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">#1, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x0)</SPAN>
+    frame <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">#0: 0x0000000000000000</SPAN>
+error: memory <SPAN class=nb style="COLOR: rgb(0,132,255)">read</SPAN> failed <SPAN class=k style="FONT-WEIGHT: 600">for</SPAN> 0x0
+Target <SPAN class=m style="COLOR: rgb(0,132,255)">0</SPAN>: <SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>MyGameEngineOpenGL<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN> stopped.
+<SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>lldb<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN> bt
+* thread <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">#1, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=1, address=0x0)</SPAN>
+  * frame <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">#0: 0x0000000000000000</SPAN>
+    frame <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">#1: 0x0000000100002a9e MyGameEngineOpenGL`My::OpenGLApplication::Initialize(this=0x0000000100701410) at OpenGLApplication.cpp:106</SPAN>
+    frame <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">#2: 0x0000000100043a29 MyGameEngineOpenGL`main(argc=1, argv=0x00007ffeefbffa48) at main.cpp:7</SPAN>
+    frame <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">#3: 0x00007fff6ad71145 libdyld.dylib`start + 1</SPAN>
+    frame <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">#4: 0x00007fff6ad71145 libdyld.dylib`start + 1</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>出错位置是在OpenGLApplication.cpp:106，使用l命令打出代码：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>lldb<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN> l OpenGLApplication.cpp:106
+   <SPAN class=m style="COLOR: rgb(0,132,255)">96</SPAN>  	    <SPAN class=o style="FONT-WEIGHT: 600">{</SPAN>
+   <SPAN class=m style="COLOR: rgb(0,132,255)">97</SPAN>  	        fprintf<SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>stderr, <SPAN class=s2 style="COLOR: rgb(241,64,60)">"Can't open display\n"</SPAN><SPAN class=o style="FONT-WEIGHT: 600">)</SPAN><SPAN class=p>;</SPAN>
+   <SPAN class=m style="COLOR: rgb(0,132,255)">98</SPAN>  	        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> -1<SPAN class=p>;</SPAN>
+   <SPAN class=m style="COLOR: rgb(0,132,255)">99</SPAN>  	    <SPAN class=o style="FONT-WEIGHT: 600">}</SPAN>
+   <SPAN class=m style="COLOR: rgb(0,132,255)">100</SPAN> 	
+   <SPAN class=m style="COLOR: rgb(0,132,255)">101</SPAN> 	    <SPAN class=nv style="COLOR: rgb(0,132,255)">default_screen</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> DefaultScreen<SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>m_pDisplay<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN><SPAN class=p>;</SPAN>
+   <SPAN class=m style="COLOR: rgb(0,132,255)">102</SPAN> 	
+   <SPAN class=m style="COLOR: rgb(0,132,255)">103</SPAN> 	    gladLoadGLX<SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>m_pDisplay, default_screen<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN><SPAN class=p>;</SPAN>
+   <SPAN class=m style="COLOR: rgb(0,132,255)">104</SPAN> 	
+   <SPAN class=m style="COLOR: rgb(0,132,255)">105</SPAN> 	    /* Query framebuffer configurations */
+   <SPAN class=m style="COLOR: rgb(0,132,255)">106</SPAN> 	    <SPAN class=nv style="COLOR: rgb(0,132,255)">fb_configs</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> glXChooseFBConfig<SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>m_pDisplay, default_screen, visual_attribs, <SPAN class=p>&amp;</SPAN>num_fb_configs<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN><SPAN class=p>;</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>继续跟踪可以发现是相关的glX函数指针未被glad正确加载造成的。这个问题的解决方法现在还在摸索当中。。。（已经解决了，看更新2）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'># 
+对了，代码在“mac”分支（branch）当中。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>#更新1: 
+有进展了，<A class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/28756646" 
+data-za-detail-view-id="1043">从零开始手敲次世代游戏引擎（十二）</A>当中的代码可以正常出图了：</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic1.zhimg.com/80/v2-be0cddf425e905e2d2cb27c4dc990240_hd.jpg" 
+width=1308 
+data-original="https://pic1.zhimg.com/v2-be0cddf425e905e2d2cb27c4dc990240_r.jpg" 
+data-actualsrc="https://pic1.zhimg.com/v2-be0cddf425e905e2d2cb27c4dc990240_b.jpg" 
+data-rawheight="1032" data-rawwidth="1308" data-size="normal" 
+data-caption=""></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在MacOS下编译的命令与Linux下基本相同，但是需要加入头文件和库的查找路径。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>分两种情况：</P>
+<UL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">如果是直接安装的XQuartz的dmg的包，那么是下面这样：</LI></UL>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>chenwenlideMBP:GameEngineFromScratchPrivate chenwenli$ clang -I /usr/X11/include/ -L /usr/X11/lib -o helloengine_opengl helloengine_opengl.cpp -lxcb -lX11 -lX11-xcb -lGL -lGLU
+</CODE></PRE></DIV>
+<UL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">如果是通过macports安装的XQuatz(xorg-server)，那么还需要安装libxcb, 
+  libX11, libX11-xcb, libGL, libGLU等几个包。这里面需要注意的是libGL是包括在mesa驱动包里的。一个简单的方法是直接用 
+  sudo ports install glxgears这个命令安装glxgears这个测试程序，会自动安装GLX相关的包，然后再用sudo ports 
+  install libGLU补上libGLU就好了 。</LI></UL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>仔细观察绘制出的图形，会发现与<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/28756646" 
+data-za-detail-view-id="1043">从零开始手敲次世代游戏引擎（十二）</A>题图有一些区别。（有一条明显的对角线）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>根据参考引用（*4），这是因为在Mac 
+OS当中，通过XQuartz能够支持的OpenGL只能到版本2.1。所以，对于四边形的绘制，其实是拆成两个三角形绘制的，形成了明显的对角线。如果要使用版本3之上的OpenGL，必须使用Mac 
+OS原生的图形服务（Quartz，注意少个X）和图形API（Cocoa）创建绘图Context，而不是X11 + 
+GLX。其实在上面的过程当中也可以看到，MacPorts安装的X11是基于mesa驱动的，这个是一个开源社区的驱动，不是A/N卡原厂驱动（好吧，我的Mac其实是15年产品是I卡...但是能支持4.1），所以能够支持的功能是有限的。Mac 
+OS原生的图形API叫Cocoa，是一个基于Object-C语言的库。另外最近还有一个新的Swift语言可以用。这部分等我自己搞明白了更新上来。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>#更新2 
+Segmentation 
+Fault的问题解决了。原因是External/glad/src/glad_glx.c当中，当操作系统为MacOS的时候，是按照如下的顺序查找OpenGL的动态库的（其中绿色的两行是我加上的）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-diff style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=gh style="COLOR: rgb(153,153,153)">diff --git a/External/src/glad/src/glad_glx.c b/External/src/glad/src/glad_glx.c
+</SPAN><SPAN class=gh style="COLOR: rgb(153,153,153)">index 9551033..af0f61e 100644
+</SPAN><SPAN class=gh style="COLOR: rgb(153,153,153)"></SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">--- a/External/src/glad/src/glad_glx.c
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+++ b/External/src/glad/src/glad_glx.c
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -127,6 +127,8 @@ static
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN> int open_gl(void) {
+ #ifdef __APPLE__
+     static const char *NAMES[] = {
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        "/opt/local/lib/libGL.1.dylib",
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        "/opt/local/lib/libGL.dylib",
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>         "../Frameworks/OpenGL.framework/OpenGL",
+         "/Library/Frameworks/OpenGL.framework/OpenGL",
+         "/System/Library/Frameworks/OpenGL.framework/OpenGL",
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>原来的3行实际上加载的都是MacOS自带的OpenGL库。这个库是没有GLX相关的接口的。查看的方法是使用nm命令，如下：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-console style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>nm -gU "/System/Library/Frameworks/OpenGL.framework/OpenGL"
+00000000000053c8 T _CGLAreContextsShared
+000000000000546b T _CGLBackDispatch
+0000000000008b68 T _CGLChoosePixelFormat
+0000000000006b46 T _CGLClearDrawable
+00000000000052e3 T _CGLCopyContext
+0000000000004620 T _CGLCreateContext
+000000000000aa9e T _CGLCreatePBuffer
+000000000000ad12 T _CGLDescribePBuffer
+000000000000a584 T _CGLDescribePixelFormat
+000000000000b6cd T _CGLDescribeRenderer
+0000000000004381 T _CGLDestroyContext
+000000000000adba T _CGLDestroyPBuffer
+000000000000a0e8 T _CGLDestroyPixelFormat
+000000000000b69e T _CGLDestroyRendererInfo
+000000000000ccd2 T _CGLDisable
+000000000000cc47 T _CGLEnable
+0000000000008b2b T _CGLErrorString
+000000000000d058 T _CGLFlushDrawable
+0000000000005461 T _CGLFrontDispatch
+000000000000528d T _CGLGetContextRetainCount
+0000000000006a95 T _CGLGetDeviceFromGLRenderer
+000000000000a8c8 T _CGLGetGlobalOption
+0000000000005436 T _CGLGetNextContext
+00000000000085a0 T _CGLGetOffScreen
+000000000000aa45 T _CGLGetOption
+00000000000077ef T _CGLGetPBuffer
+000000000000af7c T _CGLGetPBufferRetainCount
+000000000000cb70 T _CGLGetParameter
+00000000000052b5 T _CGLGetPixelFormat
+000000000000a1b4 T _CGLGetPixelFormatRetainCount
+0000000000006a2d T _CGLGetShareGroup
+0000000000007c21 T _CGLGetSurface
+000000000000d0b3 T _CGLGetVersion
+00000000000044b8 T _CGLGetVirtualScreen
+000000000000ca68 T _CGLIsEnabled
+000000000000a5d6 T _CGLLockContext
+0000000000006024 T _CGLOpenCLMuxLockDown
+000000000000b30c T _CGLQueryRendererInfo
+00000000000050ef T _CGLReleaseContext
+000000000000af4a T _CGLReleasePBuffer
+000000000000a182 T _CGLReleasePixelFormat
+0000000000005533 T _CGLRestoreDispatch
+000000000000556a T _CGLRestoreDispatchFunction
+0000000000005263 T _CGLRetainContext
+000000000000af6a T _CGLRetainPBuffer
+000000000000a1a2 T _CGLRetainPixelFormat
+0000000000005480 T _CGLSelectDispatch
+00000000000054ba T _CGLSelectDispatchBounded
+0000000000005501 T _CGLSelectDispatchFunction
+0000000000007cda T _CGLSetFullScreen
+00000000000082e0 T _CGLSetFullScreenOnDisplay
+000000000000a6a0 T _CGLSetGlobalOption
+0000000000008403 T _CGLSetOffScreen
+000000000000a9e0 T _CGLSetOption
+0000000000006c25 T _CGLSetPBuffer
+000000000000b24c T _CGLSetPBufferVolatileState
+000000000000cd5d T _CGLSetParameter
+000000000000788f T _CGLSetSurface
+000000000000455c T _CGLSetVirtualScreen
+000000000000b095 T _CGLTexImageIOSurface2D
+000000000000af8e T _CGLTexImagePBuffer
+000000000000a608 T _CGLUnlockContext
+0000000000008671 T _CGLUpdateContext
+000000000000a1c6 T _GLCDescribePixelFormat
+0000000000007758 T _GLCGetPBuffer
+000000000000ce49 T _GLCGetParameter
+0000000000001fae T _GLCGetProfilerStorage
+0000000000007be2 T _GLCGetSurface
+0000000000004405 T _GLCGetVirtualScreen
+0000000000001f83 T _GLCSetProfilerStorage
+0000000000006050 T _cglBadApplicationNotMuxAwareLockDown
+0000000000001870 T _glcDebugListener
+00000000000029c1 T _glcGetIOAccelService
+0000000000001fe8 T _glcNoop
+00000000000027b1 T _glcPluginConnect
+0000000000001ff0 T _glcPluginCount
+00000000000027e1 T _glcPluginDisconnect
+0000000000008b5f T _glcRecordError
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>可以看到很多CGL的接口，这个才是macOS原生的OpenGL接口。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以通过追加（也可以替换）到我们通过MacPorts安装的库的路径，就可以解决这个问题。注意如果是直接安装的XQurtz的dmg包而不是通过MacPorts安装的库，那么路径应该是/usr/X11而不是/opt/local</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic1.zhimg.com/80/v2-1385abbc05806daa5d639051e697d604_hd.jpg" 
+width=88 
+data-actualsrc="https://pic1.zhimg.com/v2-1385abbc05806daa5d639051e697d604_b.jpg" 
+data-rawheight="31" data-rawwidth="88" data-size="normal"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">本作品采用知识共享署名 
+4.0 国际许可协议进行许可。</FIGCAPTION></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><B 
+style="FONT-WEIGHT: 600">参考引用</B></P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/MacOS" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">macOS - 
+  Wikipedia</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//www.xquartz.org/" 
+  rel="nofollow noreferrer" target=_blank 
+  data-za-detail-view-id="1043">XQuartz</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//www.macports.org/" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">The 
+  MacPorts Project</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//www.geeks3d.com/20121109/overview-of-opengl-support-on-os-x/" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Overview 
+  of OpenGL Support on OS X</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//blog.alexbeutel.com/285/cmake-opengl-and-glx-on-os-x/" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">CMake, 
+  OpenGL, and GLX on OS X</A></LI></OL></body>
+</html>

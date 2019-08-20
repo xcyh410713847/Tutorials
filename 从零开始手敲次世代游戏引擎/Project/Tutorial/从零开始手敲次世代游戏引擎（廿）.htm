@@ -1,0 +1,454 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（廿）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/29092979" target=_blank >原文链接</A> </EM></P>
+<P>
+<EM>
+(未修改原文）
+</EM></P>
+<P>
+<EM>正文开始：</EM>
+
+</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>上一篇我们完成了一个基本的内存管理模块。接下来让我们把我们前面图形支线任务的代码整合到我们的引擎代码里面。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在我们继续进行之前，首先让我们调整一下我们的CMakefileLists.txt，使得我们在Windows平台下缺省也使用类似Linux平台的编译方式（gmake 
++ clang）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cmake style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=nb style="COLOR: rgb(0,132,255)">cmake_minimum_required</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">VERSION</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">3.1</SPAN><SPAN class=p>)</SPAN> <SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_C_COMPILER</SPAN>               <SPAN class=s2 style="COLOR: rgb(241,64,60)">"clang-cl"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_C_FLAGS</SPAN>                  <SPAN class=s2 style="COLOR: rgb(241,64,60)">"-Wall"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_C_FLAGS_DEBUG</SPAN>            <SPAN class=s2 style="COLOR: rgb(241,64,60)">"/Debug"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_C_FLAGS_MINSIZEREL</SPAN>       <SPAN class=s2 style="COLOR: rgb(241,64,60)">"-Os -DNDEBUG"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_C_FLAGS_RELEASE</SPAN>          <SPAN class=s2 style="COLOR: rgb(241,64,60)">"-O4 -DNDEBUG"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_C_FLAGS_RELWITHDEBINFO</SPAN>   <SPAN class=s2 style="COLOR: rgb(241,64,60)">"-O2 /Debug"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_C_STANDARD</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">11</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_CXX_COMPILER</SPAN>             <SPAN class=s2 style="COLOR: rgb(241,64,60)">"clang-cl"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_CXX_FLAGS</SPAN>                <SPAN class=s2 style="COLOR: rgb(241,64,60)">"-Wall -Xclang -std=gnu++14"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_CXX_FLAGS_DEBUG</SPAN>          <SPAN class=s2 style="COLOR: rgb(241,64,60)">"/Debug"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_CXX_FLAGS_MINSIZEREL</SPAN>     <SPAN class=s2 style="COLOR: rgb(241,64,60)">"-Os -DNDEBUG"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_CXX_FLAGS_RELEASE</SPAN>        <SPAN class=s2 style="COLOR: rgb(241,64,60)">"-O4 -DNDEBUG"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">set</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">CMAKE_CXX_FLAGS_RELWITHDEBINFO</SPAN> <SPAN class=s2 style="COLOR: rgb(241,64,60)">"-O2 /Debug"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">project</SPAN> <SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">GameEngineFromScrath</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">include_directories</SPAN><SPAN class=p>(</SPAN><SPAN class=s2 style="COLOR: rgb(241,64,60)">"${PROJECT_SOURCE_DIR}/Framework/Common"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">include_directories</SPAN><SPAN class=p>(</SPAN><SPAN class=s2 style="COLOR: rgb(241,64,60)">"${PROJECT_SOURCE_DIR}/Framework/Interface"</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">add_subdirectory</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">Framework</SPAN><SPAN class=p>)</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">
+</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"></SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">add_subdirectory</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">Empty</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们强行指定了C/C++编译器为"clang-cl"。"clang-cl"是clang的一个Wrapper，可以兼容Visual 
+Studio编译器（cl.exe）的编译选项。这个我们在之前的文章当中也交代过了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>如果之前已经用CMake生成过Visual 
+Studio项目文件，让我们清空我们的build文件夹，或者也可以新建一个build文件夹。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-powershell style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=n>C</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">:</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Users</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Tim</SPAN><SPAN class=p>.</SPAN><SPAN class=n>AzureAD</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Source</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Repos</SPAN><SPAN class=p>\</SPAN><SPAN class=n>GameEngineFromScratch</SPAN><SPAN class=p>\</SPAN><SPAN class=n>build</SPAN><SPAN class=p>&gt;</SPAN><SPAN class=n>rm</SPAN> <SPAN class=n>-rf</SPAN> <SPAN class=p>*</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们通过参数指定CMake生成Unix 
+Makefile</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-powershell style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=n>C</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">:</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Users</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Tim</SPAN><SPAN class=p>.</SPAN><SPAN class=n>AzureAD</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Source</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Repos</SPAN><SPAN class=p>\</SPAN><SPAN class=n>GameEngineFromScratch</SPAN><SPAN class=p>\</SPAN><SPAN class=n>build</SPAN><SPAN class=p>&gt;</SPAN><SPAN class=n>cmake</SPAN> <SPAN class=n>-G</SPAN> <SPAN class=s2 style="COLOR: rgb(241,64,60)">"Unix Makefiles"</SPAN> <SPAN class=p>..</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们就可以使用make命令进行编译了。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-ps1con style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>C:\Users\Tim.AzureAD\Source\Repos\GameEngineFromScratch\build&gt;make
+Scanning dependencies of target Common
+[ 12%] Building CXX object Framework/Common/CMakeFiles/Common.dir/Allocator.cpp.obj
+clang-cl.exe: warning: unknown argument ignored in clang-cl: '-std=gnu++11' [-Wunknown-argument]
+C:/Users/Tim.AzureAD/Source/Repos/GameEngineFromScratch/Framework/Common/Allocator.cpp(13,9):  warning: field 'm_szBlockSize' will be initialized
+      after field 'm_szAlignmentSize' [-Wreorder]
+        m_szBlockSize(0), m_szAlignmentSize(0), m_nBlocksPerPage(0),
+        ^
+C:/Users/Tim.AzureAD/Source/Repos/GameEngineFromScratch/Framework/Common/Allocator.cpp(13,49):  warning: field 'm_nBlocksPerPage' will be
+      initialized after field 'm_pPageList' [-Wreorder]
+        m_szBlockSize(0), m_szAlignmentSize(0), m_nBlocksPerPage(0),
+                                                ^
+2 warnings generated.
+[ 25%] Building CXX object Framework/Common/CMakeFiles/Common.dir/BaseApplication.cpp.obj
+clang-cl.exe: warning: unknown argument ignored in clang-cl: '-std=gnu++11' [-Wunknown-argument]
+[ 37%] Building CXX object Framework/Common/CMakeFiles/Common.dir/GraphicsManager.cpp.obj
+clang-cl.exe: warning: unknown argument ignored in clang-cl: '-std=gnu++11' [-Wunknown-argument]
+[ 50%] Building CXX object Framework/Common/CMakeFiles/Common.dir/MemoryManager.cpp.obj
+clang-cl.exe: warning: unknown argument ignored in clang-cl: '-std=gnu++11' [-Wunknown-argument]
+[ 62%] Building CXX object Framework/Common/CMakeFiles/Common.dir/main.cpp.obj
+clang-cl.exe: warning: unknown argument ignored in clang-cl: '-std=gnu++11' [-Wunknown-argument]
+[ 75%] Linking CXX static library Common.lib
+[ 75%] Built target Common
+Scanning dependencies of target Empty
+[ 87%] Building CXX object Empty/CMakeFiles/Empty.dir/EmptyApplication.cpp.obj
+clang-cl.exe: warning: unknown argument ignored in clang-cl: '-std=gnu++11' [-Wunknown-argument]
+[100%] Linking CXX executable Empty.exe
+[100%] Built target Empty</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>由于我们在CMakeLists.txt当中打开了"-wall"开关，我们看到了更多的warning。这些warning通常不会直接引起问题，但是对于多平台的code，这些warning常常是值得关注的。比如我们这里的关于初始化顺序方面，以及返回值方面的warning。让我们对其进行修正：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-diff style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>C:\Users\Tim.AzureAD\Source\Repos\GameEngineFromScratch\build&gt;git diff ..\Framework\Common\Allocator.cpp
+<SPAN class=gh style="COLOR: rgb(153,153,153)">diff --git a/Framework/Common/Allocator.cpp b/Framework/Common/Allocator.cpp
+</SPAN><SPAN class=gh style="COLOR: rgb(153,153,153)">index 6526691..b0c5d30 100644
+</SPAN><SPAN class=gh style="COLOR: rgb(153,153,153)"></SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">--- a/Framework/Common/Allocator.cpp
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+++ b/Framework/Common/Allocator.cpp
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -9,9 +9,9 @@
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN> using namespace My;
+
+ My::Allocator::Allocator()
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        : m_szDataSize(0), m_szPageSize(0),
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        m_szBlockSize(0), m_szAlignmentSize(0), m_nBlocksPerPage(0),
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        m_pPageList(nullptr), m_pFreeList(nullptr)
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        : m_pPageList(nullptr), m_pFreeList(nullptr),
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        m_szDataSize(0), m_szPageSize(0),
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        m_szAlignmentSize(0), m_szBlockSize(0), m_nBlocksPerPage(0)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN> {
+ }
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>另外，我们在<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/28598462" 
+data-za-detail-view-id="1043">文章（二）</A>当中编译的clang工具链是32位的。这并不影响我们的使用，但是如果我们想要升级到64位，需要按照参考引用1当中的提示，重新编译我们的工具链。</P>
+<BLOCKQUOTE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(100,100,100); FONT-STYLE: normal; PADDING-LEFT: 1em; MARGIN: 1.4em 0px; BORDER-LEFT: rgb(211,211,211) 3px solid; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>By 
+  default, the Visual Studio project files generated by CMake use the 32-bit 
+  toolset. If you are developing on a 64-bit version of Windows and want to use 
+  the 64-bit toolset, pass the ``-Thost=x64`` flag when generating the Visual 
+  Studio solution. This requires CMake 3.8.0 or later.</BLOCKQUOTE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>为了分别编译Debug版和Release版，我们需要创建两个Build目录。目录名字随便，我们这里使用build/Debug, 
+build/Release。然后在build/Debug当中执行下面的命令：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ..\..</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在build/Release当中执行下面的命令</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..\..</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>就可以分别生成Debug和Release的makefile。然后在各自的目录当中执行make就可以了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了。如我们之前设计的，Application模块是用来抽象平台相关接口，并读取配置文件的。我们首先创建一个结构体，用来保存我们的配置：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#pragma once
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;cstdint&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;iostream&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN> <SPAN class=p>{</SPAN>
+	<SPAN class=k style="FONT-WEIGHT: 600">struct</SPAN> <SPAN class=n>GfxConfiguration</SPAN> <SPAN class=p>{</SPAN>
+		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// Inline all-elements constructor.
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// \param[in] _apiVer the API and version information
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// \param[in] r the red color depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// \param[in] g the green color depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// \param[in] b the blue color depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// \param[in] a the alpha color depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// \param[in] d the depth buffer depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// \param[in] s the stencil buffer depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// \param[in] msaa the msaa sample count
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// \param[in] width the screen width in pixel
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/// \param[in] height the screen height in pixel
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=n>GfxConfiguration</SPAN><SPAN class=p>(</SPAN><SPAN class=n>uint32_t</SPAN> <SPAN class=n>r</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>uint32_t</SPAN> <SPAN class=n>g</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN>
+			<SPAN class=n>uint32_t</SPAN> <SPAN class=n>b</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>uint32_t</SPAN> <SPAN class=n>a</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN>
+			<SPAN class=n>uint32_t</SPAN> <SPAN class=n>d</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">24</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>uint32_t</SPAN> <SPAN class=n>s</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>uint32_t</SPAN> <SPAN class=n>msaa</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN>
+			<SPAN class=n>uint32_t</SPAN> <SPAN class=n>width</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1920</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>uint32_t</SPAN> <SPAN class=n>height</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1080</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+			<SPAN class=n>redBits</SPAN><SPAN class=p>(</SPAN><SPAN class=n>r</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>greenBits</SPAN><SPAN class=p>(</SPAN><SPAN class=n>g</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>blueBits</SPAN><SPAN class=p>(</SPAN><SPAN class=n>b</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>alphaBits</SPAN><SPAN class=p>(</SPAN><SPAN class=n>a</SPAN><SPAN class=p>),</SPAN>
+			<SPAN class=n>depthBits</SPAN><SPAN class=p>(</SPAN><SPAN class=n>d</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>stencilBits</SPAN><SPAN class=p>(</SPAN><SPAN class=n>s</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>msaaSamples</SPAN><SPAN class=p>(</SPAN><SPAN class=n>msaa</SPAN><SPAN class=p>),</SPAN>
+			<SPAN class=n>screenWidth</SPAN><SPAN class=p>(</SPAN><SPAN class=n>width</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>screenHeight</SPAN><SPAN class=p>(</SPAN><SPAN class=n>height</SPAN><SPAN class=p>)</SPAN>
+		<SPAN class=p>{}</SPAN>
+
+		<SPAN class=n>uint32_t</SPAN> <SPAN class=n>redBits</SPAN><SPAN class=p>;</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">///&lt; red color channel depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=n>uint32_t</SPAN> <SPAN class=n>greenBits</SPAN><SPAN class=p>;</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">///&lt; green color channel depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=n>uint32_t</SPAN> <SPAN class=n>blueBits</SPAN><SPAN class=p>;</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">///&lt; blue color channel depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=n>uint32_t</SPAN> <SPAN class=n>alphaBits</SPAN><SPAN class=p>;</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">///&lt; alpha color channel depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=n>uint32_t</SPAN> <SPAN class=n>depthBits</SPAN><SPAN class=p>;</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">///&lt; depth buffer depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=n>uint32_t</SPAN> <SPAN class=n>stencilBits</SPAN><SPAN class=p>;</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">///&lt; stencil buffer depth in bits
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=n>uint32_t</SPAN> <SPAN class=n>msaaSamples</SPAN><SPAN class=p>;</SPAN> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">///&lt; MSAA samples
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=n>uint32_t</SPAN> <SPAN class=n>screenWidth</SPAN><SPAN class=p>;</SPAN>
+		<SPAN class=n>uint32_t</SPAN> <SPAN class=n>screenHeight</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">friend</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>ostream</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">operator</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN><SPAN class=p>(</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>ostream</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>out</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>GfxConfiguration</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>conf</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=p>{</SPAN> 
+            <SPAN class=n>out</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"GfxConfiguration:"</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> 
+                <SPAN class=s style="COLOR: rgb(241,64,60)">" R:"</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>conf</SPAN><SPAN class=p>.</SPAN><SPAN class=n>redBits</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> 
+                <SPAN class=s style="COLOR: rgb(241,64,60)">" G:"</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>conf</SPAN><SPAN class=p>.</SPAN><SPAN class=n>greenBits</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN>
+                <SPAN class=s style="COLOR: rgb(241,64,60)">" B:"</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>conf</SPAN><SPAN class=p>.</SPAN><SPAN class=n>blueBits</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN>
+                <SPAN class=s style="COLOR: rgb(241,64,60)">" A:"</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>conf</SPAN><SPAN class=p>.</SPAN><SPAN class=n>alphaBits</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN>
+                <SPAN class=s style="COLOR: rgb(241,64,60)">" D:"</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>conf</SPAN><SPAN class=p>.</SPAN><SPAN class=n>depthBits</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN>
+                <SPAN class=s style="COLOR: rgb(241,64,60)">" S:"</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>conf</SPAN><SPAN class=p>.</SPAN><SPAN class=n>stencilBits</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN>
+                <SPAN class=s style="COLOR: rgb(241,64,60)">" M:"</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>conf</SPAN><SPAN class=p>.</SPAN><SPAN class=n>msaaSamples</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN>
+                <SPAN class=s style="COLOR: rgb(241,64,60)">" W:"</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>conf</SPAN><SPAN class=p>.</SPAN><SPAN class=n>screenWidth</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN>
+                <SPAN class=s style="COLOR: rgb(241,64,60)">" H:"</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>conf</SPAN><SPAN class=p>.</SPAN><SPAN class=n>screenHeight</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN>
+                <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>endl</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>out</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=p>}</SPAN>
+	<SPAN class=p>};</SPAN>
+<SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们修改我们的BaseApplication基类，添加一个成员变量用于保存这个配置，同时添加一个构造函数用于接受配置：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-diff style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=gh style="COLOR: rgb(153,153,153)">diff --git a/Framework/Common/BaseApplication.hpp b/Framework/Common/BaseApplication.hpp
+</SPAN><SPAN class=gh style="COLOR: rgb(153,153,153)">index 3244a64..42bece6 100644
+</SPAN><SPAN class=gh style="COLOR: rgb(153,153,153)"></SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">--- a/Framework/Common/BaseApplication.hpp
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+++ b/Framework/Common/BaseApplication.hpp
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -1,10 +1,12 @@
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN> #pragma once
+ #include "IApplication.hpp"
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include "GfxConfiguration.h"
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+ namespace My {
+        class BaseApplication : implements IApplication
+        {
+        public:
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        BaseApplication(GfxConfiguration&amp; cfg);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>                virtual int Initialize();
+                virtual void Finalize();
+                // One cycle of the main loop
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -15,6 +17,11 @@ namespace My {
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN>        protected:
+                // Flag if need quit the main loop of the application
+                static bool m_bQuit;
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+               GfxConfiguration m_Config;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+       private:
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+               // hide the default construct to enforce a configuration
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+               BaseApplication(){};
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>        };
+ }
+</CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-diff style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=gh style="COLOR: rgb(153,153,153)">diff --git a/Framework/Common/BaseApplication.cpp b/Framework/Common/BaseApplication.cpp
+</SPAN><SPAN class=gh style="COLOR: rgb(153,153,153)">index f61335e..a142115 100644
+</SPAN><SPAN class=gh style="COLOR: rgb(153,153,153)"></SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">--- a/Framework/Common/BaseApplication.cpp
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+++ b/Framework/Common/BaseApplication.cpp
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -1,9 +1,15 @@
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN> #include "BaseApplication.hpp"
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;iostream&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+bool My::BaseApplication::m_bQuit = false;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+My::BaseApplication::BaseApplication(GfxConfiguration&amp; cfg)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  :m_Config(cfg)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+{
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+}
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+ // Parse command line, read configuration, initialize all sub modules
+ int My::BaseApplication::Initialize()
+ {
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       m_bQuit = false;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    std::cout &lt;&lt; m_Config;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+        return 0;
+ }
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好，然后让我们编译执行这个程序。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>C:\Users\Tim.AzureAD\Source\Repos\GameEngineFromScratch\build\Debug&gt;make
+Scanning dependencies of target Common
+[ 12%] Building CXX object Framework/Common/CMakeFiles/Common.dir/Allocator.cpp.obj
+[ 25%] Building CXX object Framework/Common/CMakeFiles/Common.dir/BaseApplication.cpp.obj
+[ 37%] Building CXX object Framework/Common/CMakeFiles/Common.dir/GraphicsManager.cpp.obj
+[ 50%] Building CXX object Framework/Common/CMakeFiles/Common.dir/MemoryManager.cpp.obj
+[ 62%] Building CXX object Framework/Common/CMakeFiles/Common.dir/main.cpp.obj
+[ 75%] Linking CXX static library Common.lib
+[ 75%] Built target Common
+Scanning dependencies of target Empty
+[ 87%] Building CXX object Empty/CMakeFiles/Empty.dir/EmptyApplication.cpp.obj
+[100%] Linking CXX executable Empty.exe
+LINK : 没有找到 Empty.exe 或上一个增量链接没有生成它；正在执行完全链接
+[100%] Built target Empty
+
+C:\Users\Tim.AzureAD\Source\Repos\GameEngineFromScratch\build\Debug&gt;Empty\Empty.exe
+GfxConfiguration: R:8 G:8 B:8 A:8 D:24 S:0 M:0 W:1920 H:1080
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>按Ctrl-C退出执行。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来我们统合<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/28641118">文章（七）</A>所写代码。我们在Platform/Windows之下新建两个文件，并从BaseApplication类派生出WindowsApplication类</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;windows.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;windowsx.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"BaseApplication.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">WindowsApplication</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>BaseApplication</SPAN>
+    <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=n>WindowsApplication</SPAN><SPAN class=p>(</SPAN><SPAN class=n>GfxConfiguration</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>config</SPAN><SPAN class=p>)</SPAN>
+            <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>BaseApplication</SPAN><SPAN class=p>(</SPAN><SPAN class=n>config</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{};</SPAN>
+
+       	<SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Initialize</SPAN><SPAN class=p>();</SPAN>
+		<SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Finalize</SPAN><SPAN class=p>();</SPAN>
+		<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// One cycle of the main loop
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>		<SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Tick</SPAN><SPAN class=p>();</SPAN>
+
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// the WindowProc function prototype
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=n>LRESULT</SPAN> <SPAN class=n>CALLBACK</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">WindowProc</SPAN><SPAN class=p>(</SPAN><SPAN class=n>HWND</SPAN> <SPAN class=n>hWnd</SPAN><SPAN class=p>,</SPAN>
+                         <SPAN class=n>UINT</SPAN> <SPAN class=n>message</SPAN><SPAN class=p>,</SPAN>
+                         <SPAN class=n>WPARAM</SPAN> <SPAN class=n>wParam</SPAN><SPAN class=p>,</SPAN>
+                         <SPAN class=n>LPARAM</SPAN> <SPAN class=n>lParam</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=p>};</SPAN>
+<SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"WindowsApplication.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;tchar.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">using</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN><SPAN class=p>;</SPAN>
+
+
+<SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=n>GfxConfiguration</SPAN> <SPAN class=n>config</SPAN><SPAN class=p>(</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">32</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">960</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">540</SPAN><SPAN class=p>,</SPAN> <SPAN class=sa>L</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"Game Engine From Scratch (Windows)"</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>WindowsApplication</SPAN>  <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">g_App</SPAN><SPAN class=p>(</SPAN><SPAN class=n>config</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>IApplication</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN>       <SPAN class=n>g_pApp</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>g_App</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>My</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>WindowsApplication</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Initialize</SPAN><SPAN class=p>()</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>result</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=n>result</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>BaseApplication</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Initialize</SPAN><SPAN class=p>();</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>result</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">!=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=n>exit</SPAN><SPAN class=p>(</SPAN><SPAN class=n>result</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// get the HINSTANCE of the Console Program
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>HINSTANCE</SPAN> <SPAN class=n>hInstance</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>GetModuleHandle</SPAN><SPAN class=p>(</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// the handle for the window, filled by a function
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>HWND</SPAN> <SPAN class=n>hWnd</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// this struct holds information for the window class
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>WNDCLASSEX</SPAN> <SPAN class=n>wc</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// clear out the window class for use
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>ZeroMemory</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>wc</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">sizeof</SPAN><SPAN class=p>(</SPAN><SPAN class=n>WNDCLASSEX</SPAN><SPAN class=p>));</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// fill in the struct with the needed information
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>cbSize</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">sizeof</SPAN><SPAN class=p>(</SPAN><SPAN class=n>WNDCLASSEX</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>style</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>CS_HREDRAW</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">|</SPAN> <SPAN class=n>CS_VREDRAW</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>lpfnWndProc</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>WindowProc</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>hInstance</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>hInstance</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>hCursor</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>LoadCursor</SPAN><SPAN class=p>(</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>IDC_ARROW</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>hbrBackground</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>HBRUSH</SPAN><SPAN class=p>)</SPAN><SPAN class=n>COLOR_WINDOW</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>lpszClassName</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>_T</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"GameEngineFromScratch"</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// register the window class
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>RegisterClassEx</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>wc</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// create the window and use the result as the handle
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>hWnd</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>CreateWindowExW</SPAN><SPAN class=p>(</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN>
+                          <SPAN class=sa>L</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"GameEngineFromScratch"</SPAN><SPAN class=p>,</SPAN>      <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// name of the window class
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=n>m_Config</SPAN><SPAN class=p>.</SPAN><SPAN class=n>appName</SPAN><SPAN class=p>,</SPAN>             <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// title of the window
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=n>WS_OVERLAPPEDWINDOW</SPAN><SPAN class=p>,</SPAN>              <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// window style
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=n>CW_USEDEFAULT</SPAN><SPAN class=p>,</SPAN>                    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// x-position of the window
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=n>CW_USEDEFAULT</SPAN><SPAN class=p>,</SPAN>                    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// y-position of the window
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=n>m_Config</SPAN><SPAN class=p>.</SPAN><SPAN class=n>screenWidth</SPAN><SPAN class=p>,</SPAN>             <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// width of the window
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=n>m_Config</SPAN><SPAN class=p>.</SPAN><SPAN class=n>screenHeight</SPAN><SPAN class=p>,</SPAN>            <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// height of the window
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>,</SPAN>                             <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// we have no parent window, NULL
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>,</SPAN>                             <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// we aren't using menus, NULL
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=n>hInstance</SPAN><SPAN class=p>,</SPAN>                        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// application handle
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>);</SPAN>                            <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// used with multiple windows, NULL
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// display the window on the screen
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>ShowWindow</SPAN><SPAN class=p>(</SPAN><SPAN class=n>hWnd</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>SW_SHOW</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>result</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=n>My</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>WindowsApplication</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Finalize</SPAN><SPAN class=p>()</SPAN>
+<SPAN class=p>{</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=n>My</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>WindowsApplication</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Tick</SPAN><SPAN class=p>()</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// this struct holds Windows event messages
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>MSG</SPAN> <SPAN class=n>msg</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// we use PeekMessage instead of GetMessage here
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// because we should not block the thread at anywhere
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// except the engine execution driver module 
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>PeekMessage</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>msg</SPAN><SPAN class=p>,</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>PM_REMOVE</SPAN><SPAN class=p>))</SPAN> <SPAN class=p>{</SPAN>
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// translate keystroke messages into the right format
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=n>TranslateMessage</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>msg</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// send the message to the WindowProc function
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=n>DispatchMessage</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>msg</SPAN><SPAN class=p>);</SPAN> 
+    <SPAN class=p>}</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// this is the main message handler for the program
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN><SPAN class=n>LRESULT</SPAN> <SPAN class=n>CALLBACK</SPAN> <SPAN class=n>My</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>WindowsApplication</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>WindowProc</SPAN><SPAN class=p>(</SPAN><SPAN class=n>HWND</SPAN> <SPAN class=n>hWnd</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>UINT</SPAN> <SPAN class=n>message</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>WPARAM</SPAN> <SPAN class=n>wParam</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>LPARAM</SPAN> <SPAN class=n>lParam</SPAN><SPAN class=p>)</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// sort through and find what code to run for the message given
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">switch</SPAN><SPAN class=p>(</SPAN><SPAN class=n>message</SPAN><SPAN class=p>)</SPAN>
+    <SPAN class=p>{</SPAN>
+	<SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=nl>WM_PAINT</SPAN><SPAN class=p>:</SPAN>
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// we will replace this part with Rendering Module
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>	    <SPAN class=p>{</SPAN>
+	    <SPAN class=p>}</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">break</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// this message is read when the window is closed
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=nl>WM_DESTROY</SPAN><SPAN class=p>:</SPAN>
+        <SPAN class=p>{</SPAN>
+            <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// close the application entirely
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>            <SPAN class=n>PostQuitMessage</SPAN><SPAN class=p>(</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>);</SPAN>
+            <SPAN class=n>BaseApplication</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>m_bQuit</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">true</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=p>}</SPAN>
+    <SPAN class=p>}</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// Handle any messages the switch statement didn't
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>DefWindowProc</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>hWnd</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>message</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>wParam</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>lParam</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=p>}</SPAN>
+
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>注意我们的主入口（定义在Framework/Common/main.cpp）是main()而不是WinMain()。但是我们依然可以创建窗口。主要的区别是我们需要自己获取hinstance，具体请参看代码。</P>
+<H2 
+style='FONT-SIZE: 1.2em; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: 600; COLOR: rgb(26,26,26); FONT-STYLE: normal; CLEAR: left; MARGIN: 2.33em 0px 1.16em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; LINE-HEIGHT: 1.5; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px; font-stretch: inherit; font-variant-numeric: inherit'>参考引用：</H2>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//clang.llvm.org/get_started.html" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Clang - 
+  Getting Started</A></LI></OL><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.png" 
+width=88 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.png" 
+data-rawheight="31" data-rawwidth="88"></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P></body>
+</html>

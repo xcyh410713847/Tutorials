@@ -1,0 +1,434 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（卅）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/30424581" target=_blank >原文链接 </A></EM></P>
+<P><EM>(未修改原文）</EM></P>
+<P><EM>正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本篇我们来对接OpenGEX。不过上一篇我们留了一个尾巴没写，就是SceneNode的结构。这里补上。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在Framework/Common/SceneNode.hpp当中，首先我们定义一个SceneNode的基类，它拥有一个名字，一个存储子节点的链表，和一个存储矩阵的链表：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>   <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">BaseSceneNode</SPAN> <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>                                                                                                                                                       <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN> <SPAN class=n>m_strName</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>list</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>unique_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>BaseSceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;&gt;</SPAN> <SPAN class=n>m_Children</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>list</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>unique_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>SceneObjectTransform</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;&gt;</SPAN> <SPAN class=n>m_Transforms</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>BaseSceneNode</SPAN><SPAN class=p>()</SPAN> <SPAN class=p>{};</SPAN>                                                                                                                                          <SPAN class=n>BaseSceneNode</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>name</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=n>m_strName</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>name</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+            <SPAN class=n>BaseSceneNode</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>name</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=n>m_strName</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>name</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+            <SPAN class=n>BaseSceneNode</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;&amp;</SPAN> <SPAN class=n>name</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=n>m_strName</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>move</SPAN><SPAN class=p>(</SPAN><SPAN class=n>name</SPAN><SPAN class=p>);</SPAN> <SPAN class=p>};</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">~</SPAN><SPAN class=n>BaseSceneNode</SPAN><SPAN class=p>()</SPAN> <SPAN class=p>{};</SPAN>
+
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">AppendChild</SPAN><SPAN class=p>(</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>unique_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>BaseSceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;&amp;&amp;</SPAN> <SPAN class=n>sub_node</SPAN><SPAN class=p>)</SPAN>
+            <SPAN class=p>{</SPAN>
+                <SPAN class=n>m_Children</SPAN><SPAN class=p>.</SPAN><SPAN class=n>push_back</SPAN><SPAN class=p>(</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>move</SPAN><SPAN class=p>(</SPAN><SPAN class=n>sub_node</SPAN><SPAN class=p>));</SPAN>
+            <SPAN class=p>}</SPAN>
+
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">AppendChild</SPAN><SPAN class=p>(</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>unique_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>SceneObjectTransform</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;&amp;&amp;</SPAN> <SPAN class=n>transform</SPAN><SPAN class=p>)</SPAN>
+            <SPAN class=p>{</SPAN>
+                <SPAN class=n>m_Transforms</SPAN><SPAN class=p>.</SPAN><SPAN class=n>push_back</SPAN><SPAN class=p>(</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>move</SPAN><SPAN class=p>(</SPAN><SPAN class=n>transform</SPAN><SPAN class=p>));</SPAN>
+            <SPAN class=p>}</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个基类其实就是一个标准的树（Tree）结构的节点。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后，我们定义一个模板，从上面的基类进行派生，并加入一个名为m_pSceneObject的成员变量，代表场景对象在节点图上的挂载点：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>   <SPAN class=k style="FONT-WEIGHT: 600">template</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=k style="FONT-WEIGHT: 600">typename</SPAN> <SPAN class=n>T</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">SceneNode</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>BaseSceneNode</SPAN> <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>shared_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>T</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>m_pSceneObject</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">using</SPAN> <SPAN class=n>BaseSceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>BaseSceneNode</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>SceneNode</SPAN><SPAN class=p>()</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">default</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>SceneNode</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>shared_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>T</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;&amp;</SPAN> <SPAN class=n>object</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=n>m_pSceneObject</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>object</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+            <SPAN class=n>SceneNode</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>shared_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>T</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;&amp;&amp;</SPAN> <SPAN class=n>object</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=n>m_pSceneObject</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>move</SPAN><SPAN class=p>(</SPAN><SPAN class=n>object</SPAN><SPAN class=p>);</SPAN> <SPAN class=p>};</SPAN>
+
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">AddSceneObjectRef</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>shared_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>T</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;&amp;</SPAN> <SPAN class=n>object</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=n>m_pSceneObject</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>object</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来就是对这个模板进行各种场景对象类型的特化，比如场景几何体：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>   <SPAN class=k style="FONT-WEIGHT: 600">typedef</SPAN> <SPAN class=n>BaseSceneNode</SPAN> <SPAN class=n>SceneEmptyNode</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">SceneGeometryNode</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>SceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>SceneObjectGeometry</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN>        <SPAN class=n>m_bVisible</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN>        <SPAN class=n>m_bShadow</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN>        <SPAN class=n>m_bMotionBlur</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">using</SPAN> <SPAN class=n>SceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>SceneNode</SPAN><SPAN class=p>;</SPAN>
+
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">SetVisibility</SPAN><SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=n>visible</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=n>m_bVisible</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>visible</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Visible</SPAN><SPAN class=p>()</SPAN> <SPAN class=p>{</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>m_bVisible</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">SetIfCastShadow</SPAN><SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=n>shadow</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=n>m_bShadow</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>shadow</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">CastShadow</SPAN><SPAN class=p>()</SPAN> <SPAN class=p>{</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>m_bShadow</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">SetIfMotionBlur</SPAN><SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=n>motion_blur</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=n>m_bMotionBlur</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>motion_blur</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">MotionBlur</SPAN><SPAN class=p>()</SPAN> <SPAN class=p>{</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>m_bMotionBlur</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>光照：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>   <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">SceneLightNode</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN> <SPAN class=n>SceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>SceneObjectLight</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">protected</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=n>Vector3f</SPAN> <SPAN class=n>m_Target</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">using</SPAN> <SPAN class=n>SceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>SceneNode</SPAN><SPAN class=p>;</SPAN>
+            
+            <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">SetTarget</SPAN><SPAN class=p>(</SPAN><SPAN class=n>Vector3f</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>target</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN> <SPAN class=n>m_Target</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>target</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>Vector3f</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>GetTarget</SPAN><SPAN class=p>()</SPAN> <SPAN class=p>{</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>m_Target</SPAN><SPAN class=p>;</SPAN> <SPAN class=p>};</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>都是类似的结构，我就不在这里一一赘述了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>-------------------------------------------------------------------------------------------------</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，现在我们开始导入OpenGEX。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先我们需要导入OpenGEX官方网站提供的OpenGEX导入模板。这个模板可以在这里下载：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//www.opengex.org/OpenGex-Import.zip" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+class=invisible 
+style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">http://www.</SPAN><SPAN 
+class=visible>opengex.org/OpenGex-Imp</SPAN><SPAN class=invisible 
+style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">ort.zip</SPAN><SPAN 
+class=ellipsis></SPAN></A></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>将这个模板展开到项目的External/src目录下，然后进行适当的修改。主要需要修改的地方有这么几个：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">去掉OpenGEX.cpp当中的WinMain函数，因为我们是将其作为一个库使用</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">在OpenGEX.h当中把我们感兴趣的一些数据结构通过Public方法暴露出来</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>另外代码需要做一些修正才能在多平台上面编译。修改后的代码我也放在了GitHub上面，有需要的可以参考。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//github.com/netwarm007/OpenGEX" 
+rel="nofollow noreferrer" target=_blank 
+data-za-detail-view-id="1043">netwarm007/OpenGEX</A></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>也可以直接在本项目的根目录下（branch 
+article_30）直接运行build_opengex.bat（linux环境的话运行build_opengex.sh）这个我事先写好的脚本，直接以submodule方式将修改后的代码下载到External/src/opengex之下，并进行编译。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>上一篇文章我们导入了crossguid这个外部库，这篇文章我们导入了OpenGEX。加上之前我们导入的ispc，目前我们的项目已经有了不少的外部倚赖关系。为了方便部分初级读者学习，我也把编译好的这些库加入到了Git 
+Repo里面（在External/Windows或者External/Linux之下），因此如果仅仅是想编译我们开发的引擎本体，可以直接运行（build.bat 
+(Windows) 或者 build.sh 
+(Linux)）进行编译。根目录下有各种外部库的编译脚本，想要自己重新创建外部依赖库的，也可以用这些脚本重新编译，包括LLVM/Clang。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在编译好OpenGEX库之后，我们就可以开始将其接入到我们的引擎当中。因为OpenGEX对于我们的引擎来说只是一种外部的场景文件格式，就类似于我们之前所写的BMP文件解析器，因此首先是在Framework/Interface之下创建一个名为SceneParser.hpp的头文件，定义一个通用的场景文件解析器入口给我们的引擎（场景管理模块）调用：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#pragma once
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;memory&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;string&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"Interface.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"SceneNode.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=n>Interface</SPAN> <SPAN class=n>SceneParser</SPAN>
+    <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>unique_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>BaseSceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>Parse</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>buf</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>};</SPAN>
+<SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后在Framework/Parser之下（注意我这里将之前的Framework/Codec目录改名为了Framework/Parser，以便更好地识别这个目录里代码的功用）创建OGEX.hpp，具体实现OpenGEX场景文件的解析器（篇幅原因，代码有大量删节，具体请上GitHub查看）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;unordered_map&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"OpenGEX.h"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"portable.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"SceneParser.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">OgexParser</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>implements</SPAN> <SPAN class=n>SceneParser</SPAN>
+    <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">private</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>unordered_map</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>shared_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>BaseSceneObject</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;&gt;</SPAN> <SPAN class=n>m_SceneObjects</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">private</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=n>ConvertOddlStructureToSceneNode</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>ODDL</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Structure</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>structure</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>unique_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>BaseSceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;&amp;</SPAN> <SPAN class=n>base_node</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=p>{</SPAN>
+            <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>unique_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>BaseSceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>node</SPAN><SPAN class=p>;</SPAN>
+
+            <SPAN class=k style="FONT-WEIGHT: 600">switch</SPAN><SPAN class=p>(</SPAN><SPAN class=n>structure</SPAN><SPAN class=p>.</SPAN><SPAN class=n>GetStructureType</SPAN><SPAN class=p>())</SPAN> <SPAN class=p>{</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=n>OGEX</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=nl>kStructureNode</SPAN><SPAN class=p>:</SPAN>
+                    <SPAN class=p>{</SPAN>
+                        <SPAN class=p>...</SPAN>
+                    <SPAN class=k style="FONT-WEIGHT: 600">break</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=n>OGEX</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=nl>kStructureGeometryNode</SPAN><SPAN class=p>:</SPAN>
+                    <SPAN class=p>{</SPAN>
+                       <SPAN class=p>...</SPAN>
+                    <SPAN class=k style="FONT-WEIGHT: 600">break</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=n>OGEX</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=nl>kStructureLightNode</SPAN><SPAN class=p>:</SPAN>
+                    <SPAN class=p>{</SPAN>
+                        <SPAN class=p>...</SPAN>
+                    <SPAN class=p>}</SPAN>
+                    <SPAN class=k style="FONT-WEIGHT: 600">break</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=n>OGEX</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=nl>kStructureCameraNode</SPAN><SPAN class=p>:</SPAN>
+                    <SPAN class=p>{</SPAN>
+                        <SPAN class=p>...</SPAN>
+                    <SPAN class=p>}</SPAN>
+                    <SPAN class=k style="FONT-WEIGHT: 600">break</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=n>OGEX</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=nl>kStructureGeometryObject</SPAN><SPAN class=p>:</SPAN>
+                    <SPAN class=p>{</SPAN>
+                        <SPAN class=p>...</SPAN>
+                    <SPAN class=p>}</SPAN>
+                    <SPAN class=k style="FONT-WEIGHT: 600">break</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=n>OGEX</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=nl>kStructureTransform</SPAN><SPAN class=p>:</SPAN>
+                    <SPAN class=p>{</SPAN>
+                        <SPAN class=p>...</SPAN>
+                    <SPAN class=p>}</SPAN>
+                    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN><SPAN class=p>;</SPAN>   
+                <SPAN class=k style="FONT-WEIGHT: 600">default</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>                                                                                                                                               <SPAN class=k style="FONT-WEIGHT: 600">default</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+                    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// just ignore it and finish
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=p>};</SPAN>
+
+            <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>ODDL</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Structure</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>sub_structure</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>structure</SPAN><SPAN class=p>.</SPAN><SPAN class=n>GetFirstSubnode</SPAN><SPAN class=p>();</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">while</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>sub_structure</SPAN><SPAN class=p>)</SPAN>
+            <SPAN class=p>{</SPAN>
+                <SPAN class=n>ConvertOddlStructureToSceneNode</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>sub_structure</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>node</SPAN><SPAN class=p>);</SPAN>
+
+                <SPAN class=n>sub_structure</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>sub_structure</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>Next</SPAN><SPAN class=p>();</SPAN>
+            <SPAN class=p>}</SPAN>
+
+            <SPAN class=n>base_node</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>AppendChild</SPAN><SPAN class=p>(</SPAN><SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>move</SPAN><SPAN class=p>(</SPAN><SPAN class=n>node</SPAN><SPAN class=p>));</SPAN>
+        <SPAN class=p>}</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>unique_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>BaseSceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>Parse</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>string</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=n>buf</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=p>{</SPAN>
+            <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>unique_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>BaseSceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>root_node</SPAN> <SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">new</SPAN> <SPAN class=n>BaseSceneNode</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"scene_root"</SPAN><SPAN class=p>));</SPAN>
+            <SPAN class=n>OGEX</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>OpenGexDataDescription</SPAN>  <SPAN class=n>openGexDataDescription</SPAN><SPAN class=p>;</SPAN>
+
+            <SPAN class=n>ODDL</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>DataResult</SPAN> <SPAN class=n>result</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>openGexDataDescription</SPAN><SPAN class=p>.</SPAN><SPAN class=n>ProcessText</SPAN><SPAN class=p>(</SPAN><SPAN class=n>buf</SPAN><SPAN class=p>.</SPAN><SPAN class=n>c_str</SPAN><SPAN class=p>());</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>result</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">==</SPAN> <SPAN class=n>ODDL</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>kDataOkay</SPAN><SPAN class=p>)</SPAN>
+            <SPAN class=p>{</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>ODDL</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Structure</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>structure</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>openGexDataDescription</SPAN><SPAN class=p>.</SPAN><SPAN class=n>GetRootStructure</SPAN><SPAN class=p>()</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>GetFirstSubnode</SPAN><SPAN class=p>();</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">while</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>structure</SPAN><SPAN class=p>)</SPAN>
+                <SPAN class=p>{</SPAN>
+                    <SPAN class=n>ConvertOddlStructureToSceneNode</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>structure</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>root_node</SPAN><SPAN class=p>);</SPAN>
+
+                    <SPAN class=n>structure</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>structure</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>Next</SPAN><SPAN class=p>();</SPAN>
+                <SPAN class=p>}</SPAN>
+            <SPAN class=p>}</SPAN>
+
+            <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>std</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>move</SPAN><SPAN class=p>(</SPAN><SPAN class=n>root_node</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=p>}</SPAN>
+    <SPAN class=p>};</SPAN>
+<SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>上面这段代码总的来说就是递归迭代来遍历OpenGEX导入模板所创建的场景图（树），然后将我们感兴趣的数据结构复制到我们之前所定义的场景结构与节点图当中。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来我们开始准备测试我们所写的OpenGEX场景文件解析代码，同时也是测试我们在<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/30274711" 
+data-za-detail-view-id="1043">从零开始手敲次世代游戏引擎（二十八）</A>以及<A class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/30344564" 
+data-za-detail-view-id="1043">从零开始手敲次世代游戏引擎（二十九）</A>所写的SceneObject.hpp和SceneNode.hpp这两个核心的场景数据结构文件。OpenGEX官方网站提供的导入包里面有一个Example.ogex文件，我们将其拷贝到项目的Asset/Scene/ 
+目录下，然后在项目的Test目录（这也是一个新目录，我将之前写的所有与平台无关的测试用代码都转移到了这里）当中，创建OgexParserTest.cpp，在其中通过我们在<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/29803502" 
+data-za-detail-view-id="1043">从零开始手敲次世代游戏引擎（二十五）</A>写的AssetLoader加载这个文本文件到内存，然后通过我们上面刚刚写出来的OgexParser对其进行解析，生成我们所设计编写的SceneObject和SceneNode场景结构，然后将其以文本方式打印出来：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;iostream&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;string&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"AssetLoader.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"MemoryManager.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"OGEX.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">using</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">using</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>std</SPAN><SPAN class=p>;</SPAN>
+
+<SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=n>MemoryManager</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>g_pMemoryManager</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">new</SPAN> <SPAN class=n>MemoryManager</SPAN><SPAN class=p>();</SPAN>
+<SPAN class=p>}</SPAN>                                                                                                                                                            
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>main</SPAN><SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=p>,</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN><SPAN class=o style="FONT-WEIGHT: 600">**</SPAN> <SPAN class=p>)</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=n>g_pMemoryManager</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>Initialize</SPAN><SPAN class=p>();</SPAN>
+
+    <SPAN class=n>AssetLoader</SPAN> <SPAN class=n>asset_loader</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=n>string</SPAN> <SPAN class=n>ogex_text</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>asset_loader</SPAN><SPAN class=p>.</SPAN><SPAN class=n>SyncOpenAndReadTextFileToString</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"Scene/Example.ogex"</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=n>OgexParser</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>ogex_parser</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">new</SPAN> <SPAN class=n>OgexParser</SPAN> <SPAN class=p>();</SPAN>                                                                                                                 <SPAN class=n>unique_ptr</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>BaseSceneNode</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>root_node</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>ogex_parser</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>Parse</SPAN><SPAN class=p>(</SPAN><SPAN class=n>ogex_text</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">delete</SPAN> <SPAN class=n>ogex_parser</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=n>cout</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>root_node</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;&lt;</SPAN> <SPAN class=n>endl</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=n>g_pMemoryManager</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>Finalize</SPAN><SPAN class=p>();</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">delete</SPAN> <SPAN class=n>g_pMemoryManager</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>使用build.bat 
+（windows） 或者 build.sh （linux）编译之后，运行结果如下：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>F:\source\repos\GameEngineFromScratch&gt;build\Test\Debug\OgexParserTest.exe
+ Scene Node
+ ----------
+ Name: scene_root
+
+  Scene Node
+  ----------
+  Name: node1
+Mesh: SceneObject
+-----------
+GUID: 4da5a87f-3c1f-4287-afb0-cc674e49efa5
+Type: MESH
+
+Primitive Type: TLST
+This mesh contains 0x3 vertex properties.
+Attribute: position
+Morph Target Index: 0x0
+Data Type: FLT3
+Data Size: 0x48
+Data: -52.019 -51.0689 0 -52.019 51.0689 0 52.019 51.0689 0 52.019 -51.0689 0 -52.019 -51.0689 93.1116 52.019 -51.0689 93.1116 52.019 51.0689 93.1116 -52.019 51.0689 93.1116 -52.019 -51.0689 0 52.019 -51.0689 0 52.019 -51.0689 93.1116 -52.019 -51.0689 93.1116 52.019 -51.0689 0 52.019 51.0689 0 52.019 51.0689 93.1116 52.019 -51.0689 93.1116 52.019 51.0689 0 -52.019 51.0689 0 -52.019 51.0689 93.1116 52.019 51.0689 93.1116 -52.019 51.0689 0 -52.019 -51.0689 0 -52.019 -51.0689 93.1116 -52.019 51.0689 93.1116
+Attribute: normal
+Morph Target Index: 0x0
+Data Type: FLT3
+Data Size: 0x48
+Data: 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 -0 -1 0 1 0 0 1 0 0 1 0 0 1 0 0 0 1 0 0 1 0 0 1 0 -0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0
+Attribute: texcoord
+Morph Target Index: 0x0
+Data Type: FLT2
+Data Size: 0x30
+Data: 1 0 1 1 0 1 0 0 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1
+This mesh contains 0x1 index arrays.
+Material Index: 0x0
+Restart Index: 0x0
+Data Type: I32
+Data Size: 0x24
+Data: 0x0 0x1 0x2 0x2 0x3 0x0 0x4 0x5 0x6 0x6 0x7 0x4 0x8 0x9 0xa 0xa 0xb 0x8 0xc 0xd 0xe 0xe 0xf 0xc 0x10 0x11 0x12 0x12 0x13 0x10 0x14 0x15 0x16 0x16 0x17 0x14
+Visible: 1
+Shadow: 1
+Motion Blur: 1
+
+
+Visible: 1
+Shadow: 1
+Motion Blur: 1
+
+Transform Matrix:
+1,0,0,0
+0,1,0,0
+0,0,1,0
+-0.47506,9.50119,0,1
+
+
+Is Object Local: 0
+
+
+  Scene Node
+  ----------
+  Name: node2
+Mesh: SceneObject
+-----------
+GUID: 4da5a87f-3c1f-4287-afb0-cc674e49efa5
+Type: MESH
+
+Primitive Type: TLST
+This mesh contains 0x3 vertex properties.
+Attribute: position
+Morph Target Index: 0x0
+Data Type: FLT3
+Data Size: 0x48
+Data: -52.019 -51.0689 0 -52.019 51.0689 0 52.019 51.0689 0 52.019 -51.0689 0 -52.019 -51.0689 93.1116 52.019 -51.0689 93.1116 52.019 51.0689 93.1116 -52.019 51.0689 93.1116 -52.019 -51.0689 0 52.019 -51.0689 0 52.019 -51.0689 93.1116 -52.019 -51.0689 93.1116 52.019 -51.0689 0 52.019 51.0689 0 52.019 51.0689 93.1116 52.019 -51.0689 93.1116 52.019 51.0689 0 -52.019 51.0689 0 -52.019 51.0689 93.1116 52.019 51.0689 93.1116 -52.019 51.0689 0 -52.019 -51.0689 0 -52.019 -51.0689 93.1116 -52.019 51.0689 93.1116
+Attribute: normal
+Morph Target Index: 0x0
+Data Type: FLT3
+Data Size: 0x48
+Data: 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 -0 -1 0 1 0 0 1 0 0 1 0 0 1 0 0 0 1 0 0 1 0 0 1 0 -0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0
+Attribute: texcoord
+Morph Target Index: 0x0
+Data Type: FLT2
+Data Size: 0x30
+Data: 1 0 1 1 0 1 0 0 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1
+This mesh contains 0x1 index arrays.
+Material Index: 0x0
+Restart Index: 0x0
+Data Type: I32
+Data Size: 0x24
+Data: 0x0 0x1 0x2 0x2 0x3 0x0 0x4 0x5 0x6 0x6 0x7 0x4 0x8 0x9 0xa 0xa 0xb 0x8 0xc 0xd 0xe 0xe 0xf 0xc 0x10 0x11 0x12 0x12 0x13 0x10 0x14 0x15 0x16 0x16 0x17 0x14
+Visible: 1
+Shadow: 1
+Motion Blur: 1
+
+
+Visible: 1
+Shadow: 1
+Motion Blur: 1
+
+Transform Matrix:
+1,0,0,0
+0,1,0,0
+0,0,1,0
+132.079,9.50119,0,1
+
+
+Is Object Local: 0
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>将此输出与Example.ogex的内容进行对比，我们可以看到导入是成功的。</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.jpg" 
+width=88 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.jpg" 
+data-rawheight="31" data-rawwidth="88"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">本作品采用知识共享署名 
+4.0 国际许可协议进行许可。</FIGCAPTION></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><B 
+style="FONT-WEIGHT: 600">参考引用</B></P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A class=" external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//www.opengex.org/OpenGEX.2.0.pdf" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+  class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">http://www.</SPAN><SPAN 
+  class=visible>opengex.org/OpenGEX.2.0</SPAN><SPAN class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">.pdf</SPAN></A></LI></OL></body>
+</html>

@@ -1,0 +1,246 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（十九）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P>
+<EM>
+<A href="https://zhuanlan.zhihu.com/p/29092979" target=_blank >原文链接</A>
+
+</EM>
+</P>
+<P >
+<EM >
+  (未修改原文）</EM></P>
+
+<P>
+<EM>正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>上一篇我们实现了一个简单的基于块链的Allocator。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来我们来实现我们的内存管理模块：Memory 
+Manager</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>根据之前我们的讨论，我们设计Memory 
+Manager为这样一个角色，它总管着所有动态分配的内存。（但是严格来说，诸如堆栈，自动变量，Memory 
+Manager创建之前创建的对象，以及一些全局对象，比如代表我们架构里的各种模块，也就是***Manager，并不由其管理）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这种管理，是通过管理一系列的Allocator来实现的。每种Allocator，代表了一种分配策略。Allocator以页（Page）为单位获取资源，再以块（Block）为单位分配资源。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>采用这种结构的最大好处是：我们可以很方便地添加新类型的Allocator，并通过修改内存分配需求（Request）与分配器（Allocator）之间的映射关系（Allocator 
+Lookup Policy）来快速地实现新的内存分配策略。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>另外的好处是：我们可以通过一个线程与Allocator之间的绑定关系，迅速地实现线程的本地堆（Thread 
+Local Storage）。这个堆由于为某个线程所独占，所以并不需要互锁机制，从而可以大大地加速线程的执行速度。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>而且，这种结构还可以纵向拓展。如参考引用2那样，只要稍加改造，我们可以在Allocator之间形成层级关系以及兄弟（slibing）关系。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这种层级关系的意义在于，如果我们将一个很复杂的处理划分为一些单纯的短片段的话，那么每个片段的内存访问模式（access 
+pattern）是有规律可循的。也就是说，有的片段总是倾向于频繁的小块内存使用；有的则是大块大块的使用；有的不怎么使用；有的则突发性大量使用，等等。这些不同的使用频率和使用强度，如果我们在同一个层级对其进行管理，那么状况就十分复杂，变得不确定性很强，很难预测；然而如果我们能归纳它们的特征，尽量将类似频率和强度的大量处理组织在同一个层级，那么同一个层级的互相随机叠加，此消彼长，从整体上就会呈现出一种相对的确定性。这种趋势随着并行运行的处理的数量和不确定性增加而增强。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们的游戏引擎设计为多线程多模块异步平行执行模式。每个模块的任务类型很不一样，执行频率也不同。比如，渲染模块需要逐帧运行，涉及到大量的大块内存使用，但是这些buffer往往生命周期很短；场景加载模块则相对来说以很长的周期运行，其数据结构可能会在内存当中保持数分钟甚至数十分钟；而AI等逻辑模块则是典型的计算模块，会涉及到大量小buffer的高频分配与释放。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>于此同时，游戏场景是由场景物体组成的，我们的很多模块都需要以场景物体为单位进行处理。同一个模块对于不同场景物体的处理是类似的，也就是说对于内存的访问模式是类似的。我们可以很自然地把他们组织成为一个内存管理上的兄弟关系。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好，接下来就让我们把这些想法落实到代码当中。因为我们目前还没有其它模块，我们还不需要完成上面所设计的全部内容。我们先将我们上一篇所写的Allocator组织到我们的Memory 
+Manager当中，提供一个最基本的，单层的但是支持不同分配尺寸的，线程不安全的内存管理模块。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>代码主要参考了参考引用1，结合我们的架构与命名规则进行了封装，并且进行了跨平台方面的一些改造。</P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#pragma once
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"IRuntimeModule.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"Allocator.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;new&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">class</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)"> </SPAN><SPAN class=nc style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">MemoryManager</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">:</SPAN> <SPAN class=n>implements</SPAN> <SPAN class=n>IRuntimeModule</SPAN>
+    <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">template</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=k style="FONT-WEIGHT: 600">typename</SPAN> <SPAN class=n>T</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">typename</SPAN><SPAN class=p>...</SPAN> <SPAN class=n>Arguments</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN>
+        <SPAN class=n>T</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>New</SPAN><SPAN class=p>(</SPAN><SPAN class=n>Arguments</SPAN><SPAN class=p>...</SPAN> <SPAN class=n>parameters</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=p>{</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">new</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>Allocate</SPAN><SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">sizeof</SPAN><SPAN class=p>(</SPAN><SPAN class=n>T</SPAN><SPAN class=p>)))</SPAN> <SPAN class=n>T</SPAN><SPAN class=p>(</SPAN><SPAN class=n>parameters</SPAN><SPAN class=p>...);</SPAN>
+        <SPAN class=p>}</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">template</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=k style="FONT-WEIGHT: 600">typename</SPAN> <SPAN class=n>T</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN>
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=n>Delete</SPAN><SPAN class=p>(</SPAN><SPAN class=n>T</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>p</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=p>{</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">reinterpret_cast</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>T</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*&gt;</SPAN><SPAN class=p>(</SPAN><SPAN class=n>p</SPAN><SPAN class=p>)</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;~</SPAN><SPAN class=n>T</SPAN><SPAN class=p>();</SPAN>
+            <SPAN class=n>Free</SPAN><SPAN class=p>(</SPAN><SPAN class=n>p</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">sizeof</SPAN><SPAN class=p>(</SPAN><SPAN class=n>T</SPAN><SPAN class=p>));</SPAN>
+        <SPAN class=p>}</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">public</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">~</SPAN><SPAN class=n>MemoryManager</SPAN><SPAN class=p>()</SPAN> <SPAN class=p>{}</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>Initialize</SPAN><SPAN class=p>();</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Finalize</SPAN><SPAN class=p>();</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">virtual</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Tick</SPAN><SPAN class=p>();</SPAN>
+
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Allocate</SPAN><SPAN class=p>(</SPAN><SPAN class=n>size_t</SPAN> <SPAN class=n>size</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN>  <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">Free</SPAN><SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>p</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>size_t</SPAN> <SPAN class=n>size</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">private</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=n>size_t</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN>        <SPAN class=n>m_pBlockSizeLookup</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=n>Allocator</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN>     <SPAN class=n>m_pAllocators</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">private</SPAN><SPAN class=o style="FONT-WEIGHT: 600">:</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=n>Allocator</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>LookUpAllocator</SPAN><SPAN class=p>(</SPAN><SPAN class=n>size_t</SPAN> <SPAN class=n>size</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=p>};</SPAN>
+<SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>"MemoryManager.hpp"</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;malloc.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=k style="FONT-WEIGHT: 600">using</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN><SPAN class=p>;</SPAN>
+
+<SPAN class=k style="FONT-WEIGHT: 600">namespace</SPAN> <SPAN class=n>My</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>uint32_t</SPAN> <SPAN class=n>kBlockSizes</SPAN><SPAN class=p>[]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>{</SPAN>
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// 4-increments
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=mi style="COLOR: rgb(0,132,255)">4</SPAN><SPAN class=p>,</SPAN>  <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">12</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">16</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">20</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">24</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">28</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">32</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">36</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">40</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">44</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">48</SPAN><SPAN class=p>,</SPAN>
+        <SPAN class=mi style="COLOR: rgb(0,132,255)">52</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">56</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">60</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">64</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">68</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">72</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">76</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">80</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">84</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">88</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">92</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">96</SPAN><SPAN class=p>,</SPAN> 
+
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// 32-increments
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=mi style="COLOR: rgb(0,132,255)">128</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">160</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">192</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">224</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">256</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">288</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">320</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">352</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">384</SPAN><SPAN class=p>,</SPAN> 
+        <SPAN class=mi style="COLOR: rgb(0,132,255)">416</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">448</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">480</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">512</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">544</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">576</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">608</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">640</SPAN><SPAN class=p>,</SPAN> 
+
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// 64-increments
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=mi style="COLOR: rgb(0,132,255)">704</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">768</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">832</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">896</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">960</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1024</SPAN>
+    <SPAN class=p>};</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>uint32_t</SPAN> <SPAN class=n>kPageSize</SPAN>  <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8192</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>uint32_t</SPAN> <SPAN class=n>kAlignment</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">4</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// number of elements in the block size array
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>uint32_t</SPAN> <SPAN class=n>kNumBlockSizes</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> 
+        <SPAN class=k style="FONT-WEIGHT: 600">sizeof</SPAN><SPAN class=p>(</SPAN><SPAN class=n>kBlockSizes</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">/</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">sizeof</SPAN><SPAN class=p>(</SPAN><SPAN class=n>kBlockSizes</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>]);</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// largest valid block size
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>uint32_t</SPAN> <SPAN class=n>kMaxBlockSize</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> 
+        <SPAN class=n>kBlockSizes</SPAN><SPAN class=p>[</SPAN><SPAN class=n>kNumBlockSizes</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>];</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>My</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>MemoryManager</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Initialize</SPAN><SPAN class=p>()</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// one-time initialization
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">bool</SPAN> <SPAN class=n>s_bInitialized</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">false</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>s_bInitialized</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN>
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// initialize block size lookup table
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=n>m_pBlockSizeLookup</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">new</SPAN> <SPAN class=n>size_t</SPAN><SPAN class=p>[</SPAN><SPAN class=n>kMaxBlockSize</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">+</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>];</SPAN>
+        <SPAN class=n>size_t</SPAN> <SPAN class=n>j</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">for</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>size_t</SPAN> <SPAN class=n>i</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN> <SPAN class=n>i</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;=</SPAN> <SPAN class=n>kMaxBlockSize</SPAN><SPAN class=p>;</SPAN> <SPAN class=n>i</SPAN><SPAN class=o style="FONT-WEIGHT: 600">++</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>i</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>kBlockSizes</SPAN><SPAN class=p>[</SPAN><SPAN class=n>j</SPAN><SPAN class=p>])</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">++</SPAN><SPAN class=n>j</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=n>m_pBlockSizeLookup</SPAN><SPAN class=p>[</SPAN><SPAN class=n>i</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>j</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=p>}</SPAN>
+
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// initialize the allocators
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=n>m_pAllocators</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">new</SPAN> <SPAN class=n>Allocator</SPAN><SPAN class=p>[</SPAN><SPAN class=n>kNumBlockSizes</SPAN><SPAN class=p>];</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">for</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>size_t</SPAN> <SPAN class=n>i</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN> <SPAN class=n>i</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN> <SPAN class=n>kNumBlockSizes</SPAN><SPAN class=p>;</SPAN> <SPAN class=n>i</SPAN><SPAN class=o style="FONT-WEIGHT: 600">++</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN>
+            <SPAN class=n>m_pAllocators</SPAN><SPAN class=p>[</SPAN><SPAN class=n>i</SPAN><SPAN class=p>].</SPAN><SPAN class=n>Reset</SPAN><SPAN class=p>(</SPAN><SPAN class=n>kBlockSizes</SPAN><SPAN class=p>[</SPAN><SPAN class=n>i</SPAN><SPAN class=p>],</SPAN> <SPAN class=n>kPageSize</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>kAlignment</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=p>}</SPAN>
+
+        <SPAN class=n>s_bInitialized</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">true</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>}</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=n>My</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>MemoryManager</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Finalize</SPAN><SPAN class=p>()</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">delete</SPAN><SPAN class=p>[]</SPAN> <SPAN class=n>m_pAllocators</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">delete</SPAN><SPAN class=p>[]</SPAN> <SPAN class=n>m_pBlockSizeLookup</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=n>My</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>MemoryManager</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Tick</SPAN><SPAN class=p>()</SPAN>
+<SPAN class=p>{</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=n>Allocator</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>My</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>MemoryManager</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>LookUpAllocator</SPAN><SPAN class=p>(</SPAN><SPAN class=n>size_t</SPAN> <SPAN class=n>size</SPAN><SPAN class=p>)</SPAN>
+<SPAN class=p>{</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// check eligibility for lookup
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>size</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;=</SPAN> <SPAN class=n>kMaxBlockSize</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>m_pAllocators</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">+</SPAN> <SPAN class=n>m_pBlockSizeLookup</SPAN><SPAN class=p>[</SPAN><SPAN class=n>size</SPAN><SPAN class=p>];</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">else</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">nullptr</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>My</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>MemoryManager</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Allocate</SPAN><SPAN class=p>(</SPAN><SPAN class=n>size_t</SPAN> <SPAN class=n>size</SPAN><SPAN class=p>)</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=n>Allocator</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>pAlloc</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>LookUpAllocator</SPAN><SPAN class=p>(</SPAN><SPAN class=n>size</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>pAlloc</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>pAlloc</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>Allocate</SPAN><SPAN class=p>();</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">else</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">malloc</SPAN><SPAN class=p>(</SPAN><SPAN class=n>size</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=n>My</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>MemoryManager</SPAN><SPAN class=o style="FONT-WEIGHT: 600">::</SPAN><SPAN class=n>Free</SPAN><SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>p</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>size_t</SPAN> <SPAN class=n>size</SPAN><SPAN class=p>)</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=n>Allocator</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN> <SPAN class=n>pAlloc</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>LookUpAllocator</SPAN><SPAN class=p>(</SPAN><SPAN class=n>size</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>pAlloc</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=n>pAlloc</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>Free</SPAN><SPAN class=p>(</SPAN><SPAN class=n>p</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">else</SPAN>
+        <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">free</SPAN><SPAN class=p>(</SPAN><SPAN class=n>p</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=p>}</SPAN>
+
+</CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><B 
+style="FONT-WEIGHT: 600">参考引用</B></P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//allenchou.net/2013/05/memory-management-part-2-of-3-c-style-interface/" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Memory 
+  Management part 2 of 3: C-Style Interface | Ming-Lun "Allen" Chou</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//jamesgolick.com/2013/5/19/how-tcmalloc-works.html" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">How 
+  tcmalloc Works</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.m.wikipedia.org/wiki/Memory_management" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Memory 
+  management</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//en.cppreference.com/w/cpp/memory/new/operator_new" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">operator 
+  new, operator new[]</A></LI></OL><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.png" 
+width=88 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.png" 
+data-rawheight="31" data-rawwidth="88"></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P></body>
+</html>
