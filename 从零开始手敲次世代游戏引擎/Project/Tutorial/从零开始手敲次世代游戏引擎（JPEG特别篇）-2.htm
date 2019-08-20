@@ -1,0 +1,1385 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（JPEG特别篇）-2</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P>
+<EM>
+<A href="https://zhuanlan.zhihu.com/p/31628370" target=_blank >
+原文链接
+
+</A>
+</EM></P>
+<P>
+<EM >
+ (未修改原文）</EM></P>
+<P >
+
+<EM>
+正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/31587475" 
+data-za-detail-view-id="1043">从零开始手敲次世代游戏引擎（JPEG特别篇）-1</A>。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>（首先说一下，这篇会非常难看。但是如果动手去做了，会对各项能力有极大的提高）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们现在有了核心的算法库，接下来就是实际读取JPEG文件并进行解码了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先，JPEG标准（参考引用*2）定义了JPEG交换文件的大的框架结构。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>其次，JPEG文件有JFIF和Exif这两种主要的具体实现格式。我们先来看JFIF。JFIF的格式可以参考（参考引用*1）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>总的来说，JPEG文件是一个二进制文件，当中包括了一系列以0x 
+FF xx作为开始标记的数据段（Segement）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>每个数据段的格式基本如下：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">首先是2个字节的标识符，以FF开头。如 FF 
+  C0；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">然后是2个字节的长度，表示该段的长度（有例外，比如包含实际图像数据的SOS段）；</LI>
+  <OL 
+  style="PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; DISPLAY: table-row; COUNTER-RESET: ol2 0; PADDING-RIGHT: 0px">
+    <LI 
+    style="LIST-STYLE-TYPE: none; DISPLAY: table-row">（这里需要注意的是，首先，JPEG当中所有的二进制存储都是Big 
+    Endian的，或者说是按照网络字节顺序存储的。对于两个字节以上的数据类型，是按照从高位字节（MSB）到低位字节（LSB）的顺序进行存储的，这与X86架构的存储方式是反的；）</LI>
+    <LI 
+    style="LIST-STYLE-TYPE: none; DISPLAY: table-row">（其次，这个长度不包括标识符的2个字节，但是包括其自身的2个字节；）</LI></OL>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">接下来的内容则根据段的类型决定。</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以，我们首先需要定义这些段（头）的结构。我们从Framework/Parser/BMP.hpp拷贝新建Framework/Parser/JFIF.hpp，然后根据（参考引用*1）（参考引用*2）当中的（segment 
+header）定义，编写对应的结构体（代码有删节）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>#pragma pack(push, 1)
+    struct JFIF_FILEHEADER {
+        uint16_t    SOI;
+    };
+
+    struct JPEG_SEGMENT_HEADER {
+        uint16_t    Marker;
+        uint16_t    Length;
+    };
+
+    struct APP0 : public JPEG_SEGMENT_HEADER {
+        char        Identifier[5];
+    };
+
+    struct JFIF_APP0 : public APP0 {
+        uint8_t     MajorVersion;
+        uint8_t     MinorVersion;
+        uint8_t     DensityUnits;
+        uint16_t    Xdensity;
+        uint16_t    Ydensity;
+        uint8_t     Xthumbnail;
+        uint8_t     Ythumbnail;
+    };
+
+    struct JFXX_APP0 : public APP0 {
+        uint8_t     ThumbnailFormat;
+    };
+
+    。。。
+#pragma pack(pop)</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后，我们循环检测段的开头标志，用上面定义的这些结构体将存储在段头结构当中的数据提取出来，大致是如同下面这么一个感觉（有大量删节）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>       virtual Image Parse(const Buffer&amp; buf)
+        {
+            Image img;
+            const uint8_t* pData = buf.GetData();
+            const uint8_t* pDataEnd = buf.GetData() + buf.GetDataSize();
+
+            const JFIF_FILEHEADER* pFileHeader = reinterpret_cast&lt;const JFIF_FILEHEADER*&gt;(pData);
+            pData += sizeof(JFIF_FILEHEADER);
+            if (pFileHeader-&gt;SOI == endian_net_unsigned_int((uint16_t)0xFFD8) /* FF D8 */) {
+                std::cout &lt;&lt; "Asset is JPEG file" &lt;&lt; std::endl;
+
+                while(pData &lt; pDataEnd)
+                {
+                    const JPEG_SEGMENT_HEADER* pSegmentHeader = reinterpret_cast&lt;const JPEG_SEGMENT_HEADER*&gt;(pData);
+                    std::cout &lt;&lt; "============================" &lt;&lt; std::endl;
+                    std::printf("Segment Length: %d bytes\n" ,endian_net_unsigned_int(pSegmentHeader-&gt;Length));
+                    switch (endian_net_unsigned_int(pSegmentHeader-&gt;Marker)) {
+                        case 0xFFC0:
+                        case 0xFFC2:
+                            {
+                                if (endian_net_unsigned_int(pSegmentHeader-&gt;Marker) == 0xFFC0)
+                                    std::cout &lt;&lt; "Start Of Frame0 (baseline DCT)" &lt;&lt; std::endl;
+                                else
+                                    std::cout &lt;&lt; "Start Of Frame2 (progressive DCT)" &lt;&lt; std::endl;
+
+                                std::cout &lt;&lt; "----------------------------" &lt;&lt; std::endl;
+
+                                。。。
+                            }
+                            break;
+                        case 0xFFC4:
+                            {
+                                std::cout &lt;&lt; "Define Huffman Table" &lt;&lt; std::endl;
+                                std::cout &lt;&lt; "----------------------------" &lt;&lt; std::endl;
+
+                                auto segmentLength = endian_net_unsigned_int(pSegmentHeader-&gt;Length) - 2;
+
+
+                            }
+
+                              。。。</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>其中，0x 
+FF DA（SOS, Start Of Scan)是实际图像数据存储块开始的标志。当我们检测到这个标志的时候，我们就可以开始Dump图像的数据，直到遇到0x 
+FF D9（EOI, End Of Image）为止。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>不过这里面需要注意的问题是，实际上图像数据里面，也会出现0x 
+FF这样的值。为了不让其打乱我们的定位标志，JPEG标准规定，对于图像数据当中出现0x FF这样的情况，在其后立即插入0x 00，也就是以0x FF 
+00来代表0x FF。（同时，JPEG标准规定，不存在0x FF 00这样的段标志）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/31587475" 
+data-za-detail-view-id="1043">上一篇文章</A>当中我们也提到了，JPEG是将图像分割成为8x8的图像块进行编码的。（参考引用*3）当中比较详细地介绍了手工解码一个十分简单的JPEG图像文件的过程。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在我们编程的时候，测试用例的选择同样是十分重要的。一个好的测试用例，可以大大加快我们开发的速度和质量。由于JPEG解码过程涉及到非常多的运算和类型转换，使用一个简单明确的数据样本可以帮助我们快速地找到问题。这里我选用了与参考引用*3相同的图片。这样我们可以将程序解码的每一步结果与文章当中提供的结果进行对比，快速找到问题。这个图片是这样的：</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic4.zhimg.com/80/v2-8f65b2e9dd623468e77f46691a47aa7b_hd.jpg" 
+width=16 data-size="normal" 
+data-actualsrc="https://pic4.zhimg.com/v2-8f65b2e9dd623468e77f46691a47aa7b_b.jpg" 
+data-rawheight="8" data-rawwidth="16"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">图片来自参考引用*3</FIGCAPTION></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>太小？放大的话，如下（外框和虚线表示像素边界，不是原图片的一部分）：</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic1.zhimg.com/80/v2-9e47dbb3d4a478edbf253d1fe8c2e8d4_hd.jpg" 
+width=130 data-size="normal" 
+data-actualsrc="https://pic1.zhimg.com/v2-9e47dbb3d4a478edbf253d1fe8c2e8d4_b.jpg" 
+data-rawheight="66" data-rawwidth="130"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">图片来自参考引用*3</FIGCAPTION></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>是一个16像素宽，8像素高的图片。左边8x8是全黑，右边8x8是全白。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这么一个图片，在压缩之前是 
+16（像素（宽）） * 8（像素（高）） * 3 （字节/像素）= 384个字节。经过JPEG压缩之后，是304个字节到653个字节之间。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>什么？653个字节？那不是更大了？是的，这是因为JPEG文件的构造当中，除了图像数据之外，还有很多记录图像属性以及压缩算法参数的元数据。因为我们的图片太小了，所以这些开销反而成为了大头。事实上，如果抛去这部分开销，压缩后的图像数据只有7到9个字节。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>一般来说，JPEG的压缩率大约在1/5左右。当然这和很多因素有关。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们接下来就来看这区区9个字节是怎么一步一步展开成为384个字节的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>经过上面的程序的处理，我们可以从文件当中的SOS和EOS这两个标志之间，提取出下面这9个字节的图像数据：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>FC FF 00 E2 AF EF F3 15 7F</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先，如上面所说的，0x 
+FF 00实际上是代表着FF。所以其实有效的数据一共有8个：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>FC FF E2 AF EF F3 15 7F</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后，这8个数据其实是一种变种的霍夫曼（Huffman）编码（参考引用*5）。霍夫曼是上个世纪50年代MIT的高材生。这种编码的核心思想就是，用尽量短的2进制bit代表最多出现的数据。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>比如说我们有100个人，每个人有一个学号。如果其中有些人经常来上课，我们就给他一个短一点儿的号码。不太来上课的，我们就给他一个长一点的学号。这样的话，每次点名的时候，我们就可以少写一点儿字。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在计算机当中，所有数都是用二进制表示的。比如十进制8，用二进制表示是1000，这个长度就是4个bit；而十进制1，用二进制表示还是1， 
+这个长度就只有1个bit。如果在一个序列当中，8经常出现，而1出现的比较少，那么我们通过（强行）定义二进制1代表8，而二进制1000代表1，那么就可以缩短整个编码的长度，而不会丢失任何数据。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因此很容易可以想到，如果想要对一个序列进行霍夫曼编码，首先需要统计在这个序列当中基本符号的种类和出现频率。然后将基本符号按照出现频率从高到低进行排序，对于高的给予尽可能短的编码，对于低的给予稍长一些的编码，目的是使最终的整体码长最短。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这是一个算法问题。有兴趣的可以参考（参考引用*5）。我这里就不作更多的展开了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们这里需要实现的是霍夫曼编码的解码。绝大部分的解码，最终都是类似一个查字典的过程。首要的是构建这个字典（如果放在安全领域就叫密码本），然后根据索引一个个查出来就好了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>JPEG文件的目的并不是加密，所以这个密码本是放在文件当中的。这也是为什么在我们这个例子当中，压缩之后的文件反而变大的原因。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>JPEG的密码本的起始标志是0x 
+FF C4。我们在文件当中定位到它，然后将其提取出来。提取出来的结果大致如下（出于篇幅考虑只列出了部分）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>============================
+Segment Length: 418 bytes
+Define Huffman Table
+----------------------------
+Table Class: 0
+Destination Identifier: 0
+                 000 | 4
+                 001 | 5
+                 010 | 3
+                 011 | 2
+                 100 | 6
+                 101 | 1
+                 110 | 0
+                1110 | 7
+               11110 | 8
+              111110 | 9
+             1111110 | a
+            11111110 | b</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>竖线左侧的是编码（索引，密文），右侧的是值（词条，符号，明文）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这里需要注意的有以下几点：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">虽然JPEG当中保存了这个字典（密码本），但是为了缩小文件尺寸（毕竟JPEG的目的是压缩），没有直接保存编码（索引，密文），而只是保存了值（词条，符号，明文）以及其在Huffman 
+  Tree当中的层级。我们需要自己根据这些信息重建Huffman Tree来生成索引；</LI>
+  <LI 
+  style="LIST-STYLE-TYPE: none; DISPLAY: table-row">JPEG当中这样的字典（密码本）有4个。其内容是根据被保存的图片内容以及压缩品质设置变化的。在解码的过程当中会根据当前提取的数据状态使用不同的字典（密码本）（后面详述）</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了。接下来我们需要了解JPEG文件当中图像数据的组织形式。<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/31587475" 
+data-za-detail-view-id="1043">上一篇文章</A>当中我们所提到的8x8分块，这个其实是最底层的组织形式。事实上，彩色图像会包括R/G/B这3个通道（注意普通的JPEG不支持Alpha通道，也就是透明度）。<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/31587475" 
+data-za-detail-view-id="1043">上一篇文章</A>当中也提到，在JPEG压缩的过程当中，首先会将像素的色彩空间从RGB转成YCbCr。这样做的原因（或者说目的）是为了进一步减少文件尺寸。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>不过单纯的RGB转YCbCr，这个是一个3个分量到3个分量的坐标轴转换，并不会直接带来数据的减少。秘密在于YCbCr的DownSampling。RGB三个通道都是彩色通道，其对于人眼的重要度其实是基本均等的（如果硬要说的话，G相对来说更重要一些）。但是到了YCbCr领域，Y（辉度）是最重要的（人眼的辨识度/敏感度最高），而两个色差信号就比较不重要一些。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以，在变换到YCbCr之后，我们就可以将CbCr这两个通道的图缩小。意思是，比如8x8的图像块，Y通道仍然维持8x8的分辨率，但是CbCr这两个通道可以只保留4x4的分辨率，甚至只保留2x2的分辨率，就可以了。事实上，大部分的彩色电视信号，都是采用了这种方式来减少信号的码率。需要进一步了解的，可以参考（参考引用*6）</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic4.zhimg.com/80/v2-9cdc55df03eaae4b104d7d7a8f1d3e23_hd.jpg" 
+width=1600 data-size="normal" 
+data-original="https://pic4.zhimg.com/v2-9cdc55df03eaae4b104d7d7a8f1d3e23_r.jpg" 
+data-actualsrc="https://pic4.zhimg.com/v2-9cdc55df03eaae4b104d7d7a8f1d3e23_b.jpg" 
+data-rawheight="718" data-rawwidth="1600"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">图片来源：Wikipedia</FIGCAPTION></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>说了这么多，好像和前面的霍夫曼编码没有什么关系呢？</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>如果是原版的霍夫曼编码，那么只需要按照字典将“密文”一一翻译成为明文就可以了。然而JPEG当中的复杂性在于，它有4个密码本。什么时候使用哪个密码本，是和上面所说的YUV格式息息相关的。这是因为各个信号的统计分布很可能是非常不一样的。结合其特点使用不一样的密码本可以进一步减少压缩后的文件大小。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>常规的做法是，对于Y信号（通道）使用一套密码本，而对于CbCr信号（通道）使用另外一套密码本。注意我这里使用的是“一套”，而不是“一个”。为什么呢？</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因为单单是这样解释不了JPEG使用4个密码本的原因（看起来似乎2个就够了？）。这时候请回想起（或者如果还没有看过，请看）<A 
+class=internal 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://zhuanlan.zhihu.com/p/31587475" 
+data-za-detail-view-id="1043">上一篇文章</A>当中关于DCT/IDCT的介绍。经过DCT变换之后，矩阵的左上角（0，0）位置的值绝对值一般远大于矩阵当中的其他值。这个左上角的值被称为直流分量（DC。沿用电学称呼，在这里其实与电流没有任何关系）代表的是8x8像素块的平均值，它的统计特性与其他值（交流分量，AC。）也是非常不同的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>可能聪明的你已经猜到，其实JPEG不仅为不同的信道指定了（可能）不同的密码本，也为DCT当中的直流分量和交流分量指定了不同的密码本。所以实际上是这么一个分配情况：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">用于Y通道DC分量的密码本</LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">用于Y通道AC分量的密码本</LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">用于CbCr通道DC分量的密码本</LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">用于CbCr通道AC分量的密码本</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>下面是我们这个例子当中用到的Y通道的AC分量密码本，对比上面DC分量的密码本，我们可以看到它们是非常不同的（符号的数量远多于DC分量）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>Table Class: 1
+Destination Identifier: 0
+                  00 | 1
+                  01 | 2
+                 100 | 3
+                1010 | 11
+                1011 | 4
+                1100 | 0
+               11010 | 5
+               11011 | 21
+               11100 | 12
+              111010 | 31
+              111011 | 41
+             1111000 | 51
+             1111001 | 6
+             1111010 | 13
+             1111011 | 61
+            11111000 | 22
+            11111001 | 71
+           111110100 | 81
+           111110101 | 14
+           111110110 | 32
+           111110111 | 91
+           111111000 | a1
+           111111001 | 7
+          1111110100 | 15
+          1111110101 | b1
+          1111110110 | 42
+          1111110111 | 23
+          1111111000 | c1
+          1111111001 | 52
+          1111111010 | d1
+         11111110110 | e1
+         11111110111 | 33
+         11111111000 | 16
+        111111110010 | 62
+        111111110011 | f0
+        111111110100 | 24
+        111111110101 | 72
+       1111111101100 | 82
+       1111111101101 | f1
+      11111111011100 | 25
+      11111111011101 | 43
+      11111111011110 | 34
+      11111111011111 | 53
+      11111111100000 | 92
+      11111111100001 | a2
+     111111111000100 | b2
+     111111111000101 | 63
+    1111111110001100 | 73
+    1111111110001101 | c2
+    1111111110001110 | 35
+    1111111110001111 | 44
+    1111111110010000 | 27
+    1111111110010001 | 93
+    1111111110010010 | a3
+    1111111110010011 | b3
+    1111111110010100 | 36
+    1111111110010101 | 17
+    1111111110010110 | 54
+    1111111110010111 | 64
+    1111111110011000 | 74
+    1111111110011001 | c3
+    1111111110011010 | d2
+    1111111110011011 | e2
+    1111111110011100 | 8
+    1111111110011101 | 26
+    1111111110011110 | 83
+    1111111110011111 | 9
+    1111111110100000 | a
+    1111111110100001 | 18
+    1111111110100010 | 19
+    1111111110100011 | 84
+    1111111110100100 | 94
+    1111111110100101 | 45
+    1111111110100110 | 46
+    1111111110100111 | a4
+    1111111110101000 | b4
+    1111111110101001 | 56
+    1111111110101010 | d3
+    1111111110101011 | 55
+    1111111110101100 | 28
+    1111111110101101 | 1a
+    1111111110101110 | f2
+    1111111110101111 | e3
+    1111111110110000 | f3
+    1111111110110001 | c4
+    1111111110110010 | d4
+    1111111110110011 | e4
+    1111111110110100 | f4
+    1111111110110101 | 65
+    1111111110110110 | 75
+    1111111110110111 | 85
+    1111111110111000 | 95
+    1111111110111001 | a5
+    1111111110111010 | b5
+    1111111110111011 | c5
+    1111111110111100 | d5
+    1111111110111101 | e5
+    1111111110111110 | f5
+    1111111110111111 | 66
+    1111111111000000 | 76
+    1111111111000001 | 86
+    1111111111000010 | 96
+    1111111111000011 | a6
+    1111111111000100 | b6
+    1111111111000101 | c6
+    1111111111000110 | d6
+    1111111111000111 | e6
+    1111111111001000 | f6
+    1111111111001001 | 37
+    1111111111001010 | 47
+    1111111111001011 | 57
+    1111111111001100 | 67
+    1111111111001101 | 77
+    1111111111001110 | 87
+    1111111111001111 | 97
+    1111111111010000 | a7
+    1111111111010001 | b7
+    1111111111010010 | c7
+    1111111111010011 | d7
+    1111111111010100 | e7
+    1111111111010101 | f7
+    1111111111010110 | 38
+    1111111111010111 | 48
+    1111111111011000 | 58
+    1111111111011001 | 68
+    1111111111011010 | 78
+    1111111111011011 | 88
+    1111111111011100 | 98
+    1111111111011101 | a8
+    1111111111011110 | b8
+    1111111111011111 | c8
+    1111111111100000 | d8
+    1111111111100001 | e8
+    1111111111100010 | f8
+    1111111111100011 | 29
+    1111111111100100 | 39
+    1111111111100101 | 49
+    1111111111100110 | 59
+    1111111111100111 | 69
+    1111111111101000 | 79
+    1111111111101001 | 89
+    1111111111101010 | 99
+    1111111111101011 | a9
+    1111111111101100 | b9
+    1111111111101101 | c9
+    1111111111101110 | d9
+    1111111111101111 | e9
+    1111111111110000 | f9
+    1111111111110001 | 2a
+    1111111111110010 | 3a
+    1111111111110011 | 4a
+    1111111111110100 | 5a
+    1111111111110101 | 6a
+    1111111111110110 | 7a
+    1111111111110111 | 8a
+    1111111111111000 | 9a
+    1111111111111001 | aa
+    1111111111111010 | ba
+    1111111111111011 | ca
+    1111111111111100 | da
+    1111111111111101 | ea
+    1111111111111110 | fa</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，有了这些知识储备之后，我们就可以解码那神秘的8个字节了：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>FC FF E2 AF EF F3 15 7F</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在JPEG当中，是按照下面这么一个顺序存储数据的（这里以YUV444为例）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>Y（DC）Y（AC）Cb（DC）Cb（AC）Cr（DC）Cr（AC）</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们根据这个顺序反复替换对应的密码本，就可以得到Y，Cb，Cr三个分量的DCT矩阵。不过这里实际上还有一个秘密，就是被霍夫曼编码的其实并不是矩阵的值，而是关于矩阵的值的一个描述。具体来说：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>将FC展开成二进制：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>1111 1100</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>查阅Y（DC）密码本，可以得到前7位（1111 
+110）= 0x 
+0a。（为什么我们知道是前7位？仔细看看上面霍夫曼的编码（索引），你会发现在同一个密码本里面没有任何一个短的码会成为长的码的开头一部分。所以我们只需要一位一位的去匹配，直到找到对应的值为止。这就是霍夫曼编码的NB之处）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个0x 
+0a其实并不代表Y（DC）的值是10。它的意思其实是说，接下来的10个bit是DC的值。所以我们从第8位开始往后取出10个bit，这才是DC的值。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这就是JPEG当中的霍夫曼编码与常规的霍夫曼编码不同的地方，被称为huffman 
+/ entropy coding。其目的当然是：为了进一步毫无人性地减少文件的尺寸。（提供以bit为单位，而不是byte为单位的存储方式）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><B 
+style="FONT-WEIGHT: 600">这就是全部的秘密了吗？</B></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>并不是。JPEG是一个相当复杂的编码体系。接下来的AC部分，规则又有些不一样了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>原因其实也并不复杂。每个8x8矩阵里面，DC只有一个，位于（0，0）位置，但是AC有63个，并且大多数为0⃣️。学过算法的应该知道，这是一种典型的稀疏矩阵。下面是我们这个例子的左边8x8的Y分量DCT矩阵：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>-512,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以，如果按照DC的存储方式，即使是0，我们也需要为每个0分配存储空间（哪怕是1bit）。这个显然还不够省。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以AC分量采用的编码方式是，在用于说明数据格式的那个字节（也就是被霍夫曼编码的那个字节当中）除了说明后面有几个bit用来表示AC分量之外，还说明有几个连续的零。但是因为其实这个说明符只有一个字节，所以其中的高4位用于表示连续的0⃣️的个数，低4位用于表示AC分量的bit数。这样的话，最多能够表示的连续的0⃣️的个数是15个。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这对于上面这种情况，还是不够省。所以JPEG又规定，如果数据说明字节的值为0，则表示从该位置开始之后到第64个矩阵元素的值都是0。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><B 
+style="FONT-WEIGHT: 600">这就是全部的秘密了吗？</B></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>很可惜，虽然已经很复杂了，还有。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因为DCT矩阵的特点就是左上角有值，右下角基本都是0⃣️，所以传统的按行列进行存储的话，会把0⃣️分散在非零的值之间，不能达到最大的压缩率。所以，JPEG当中对于矩阵的存储采用的是ZigZag方式，如下：</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic4.zhimg.com/80/v2-9b2a7366e5a06c43616b8eb8367c454b_hd.jpg" 
+width=820 data-size="normal" 
+data-original="https://pic4.zhimg.com/v2-9b2a7366e5a06c43616b8eb8367c454b_r.jpg" 
+data-actualsrc="https://pic4.zhimg.com/v2-9b2a7366e5a06c43616b8eb8367c454b_b.jpg" 
+data-rawheight="742" data-rawwidth="820"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">图片来源：ISO/IEC 
+10918-1 : 1993(E)（参考引用*2）</FIGCAPTION></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这样可以将矩阵当中的0⃣️串一长串，然后用一个0x 
+00早早的将这个矩阵结束掉。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>也就是说：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>如果矩阵全为零，那么一个0x 
+00就可以代表它。（压缩率1/64）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>如果矩阵里面只有稀稀拉拉几个值，那么几个字节就可以代表它。</P>
+<HR 
+style='FONT-SIZE: medium; MAX-WIDTH: 100%; BORDER-TOP: rgb(211,211,211) 1px solid; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; BORDER-RIGHT: medium none; WIDTH: 240px; WHITE-SPACE: normal; WORD-SPACING: 0px; BORDER-BOTTOM: medium none; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 4em auto; BORDER-LEFT: medium none; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px; border-image: initial'>
+
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，经过这样眼花缭乱的技巧之后，我们上面的8个字节，就可以展开成为下面这6个矩阵：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>第一个8x8块：
+Y分量（频域）
+-512,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+Cb分量（频域）
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+Cr分量（频域）
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+第二个8x8块
+Y分量（频域）
+1020,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+Cb分量（频域）
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+Cr分量（频域）
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这里最后的一个步骤：Y分量的DC部分在块间是存储的差值。也就是说，第二个8x8块的Y（DC）其实应该是第一个8x8块的Y（DC）+第二个8x8块的Y（DC）。也就是说上面第二个块的Y分量矩阵需要修正为 
+-512 + 1020 = 508</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>508,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后将这些8x8矩阵分别用上一篇我们所写的IDCT变换变换回来，得到：（CbCr为全零矩阵，IDCT之后仍然是全零矩阵）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>第一个8x8块：
+Y分量
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+
+第二个8x8块
+Y分量
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后将其上浮128（使得值域从[-128 
+，127]变为[0, 255]），然后使用我们上一篇所写的YCbCr --&gt; RGB色彩空间变换，得到最终结果如下：</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic1.zhimg.com/80/v2-c3360f2db4ddd396613a2abe1b459cc8_hd.jpg" 
+width=2600 data-size="normal" 
+data-original="https://pic1.zhimg.com/v2-c3360f2db4ddd396613a2abe1b459cc8_r.jpg" 
+data-actualsrc="https://pic1.zhimg.com/v2-c3360f2db4ddd396613a2abe1b459cc8_b.jpg" 
+data-rawheight="424" data-rawwidth="2600"><FIGCAPTION 
+style="FONT-SIZE: 0.9em; COLOR: rgb(153,153,153); PADDING-BOTTOM: 0px; TEXT-ALIGN: center; PADDING-TOP: 0px; PADDING-LEFT: 1em; MARGIN-TOP: 0.66em; LINE-HEIGHT: 1.5; PADDING-RIGHT: 1em">每组数据分别包括R、G、B三个分量</FIGCAPTION></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这正是我们用于测试的图片的样子（左边8x8黑色，右边8x8白色）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>最后附上完整的程序执行输出，供有兴趣的读者参考：（代码在jpeg分支当中）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>*上面的说明当中还省略了被称为Quantization的过程。这个过程是将DCT矩阵的不同元素进行缩放，使得AC的部分尽可能变成绝对值小于1的小数，然后在取整的时候变成0。JPEG之所以是有损压缩，除了色空间变换之后的YUV 
+chrome sub sampling，数据的丢失主要就是发生在这一步。而上面介绍的其他步骤，在不考虑计算误差的情况下，都是可逆的）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>chenwenlideMBP:GameEngineFromScratch chenwenli$ ./build/Test/JpegParserTest 
+Asset is JPEG file
+============================
+Segment Length: 16 bytes
+JFIF-APP0
+----------------------------
+JFIF Version: 1.2
+Density Units: No units
+Density: 100*100
+No thumbnail defined in JFIF-APP0 segment!
+============================
+Segment Length: 17 bytes
+Ignor Unrecognized Segment. Marker=ffec
+============================
+Segment Length: 14 bytes
+Ignor Unrecognized Segment. Marker=ffee
+============================
+Segment Length: 132 bytes
+Define Quantization Table
+----------------------------
+Element Precision: 0
+Destination Identifier: 0
+
+2,2,2,2,3,4,5,6
+2,2,2,2,3,4,5,6
+2,2,2,2,4,5,7,9
+2,2,2,4,5,7,9,12
+3,3,4,5,8,10,12,12
+4,4,5,7,10,12,12,12
+5,5,7,9,12,12,12,12
+6,6,9,12,12,12,12,12
+
+Element Precision: 0
+Destination Identifier: 1
+
+3,3,5,9,13,15,15,15
+3,4,6,11,14,12,12,12
+5,6,9,14,12,12,12,12
+9,11,14,12,12,12,12,12
+13,14,12,12,12,12,12,12
+15,12,12,12,12,12,12,12
+15,12,12,12,12,12,12,12
+15,12,12,12,12,12,12,12
+
+============================
+Segment Length: 17 bytes
+Start Of Frame0 (baseline DCT)
+----------------------------
+Sample Precision: 8
+Num of Lines: 8
+Num of Samples per Line: 16
+Num of Components In Frame: 3
+	Component Identifier: 1
+	Horizontal Sampling Factor: 1
+	Vertical Sampling Factor: 1
+	Quantization Table Destination Selector: 0
+
+	Component Identifier: 2
+	Horizontal Sampling Factor: 1
+	Vertical Sampling Factor: 1
+	Quantization Table Destination Selector: 1
+
+	Component Identifier: 3
+	Horizontal Sampling Factor: 1
+	Vertical Sampling Factor: 1
+	Quantization Table Destination Selector: 1
+
+============================
+Segment Length: 418 bytes
+Define Huffman Table
+----------------------------
+Table Class: 0
+Destination Identifier: 0
+                 000 | 4
+                 001 | 5
+                 010 | 3
+                 011 | 2
+                 100 | 6
+                 101 | 1
+                 110 | 0
+                1110 | 7
+               11110 | 8
+              111110 | 9
+             1111110 | a
+            11111110 | b
+
+Table Class: 0
+Destination Identifier: 1
+                  00 | 1
+                  01 | 0
+                 100 | 2
+                 101 | 3
+                1100 | 4
+                1101 | 5
+                1110 | 6
+               11110 | 7
+              111110 | 8
+             1111110 | 9
+            11111110 | a
+           111111110 | b
+
+Table Class: 1
+Destination Identifier: 0
+                  00 | 1
+                  01 | 2
+                 100 | 3
+                1010 | 11
+                1011 | 4
+                1100 | 0
+               11010 | 5
+               11011 | 21
+               11100 | 12
+              111010 | 31
+              111011 | 41
+             1111000 | 51
+             1111001 | 6
+             1111010 | 13
+             1111011 | 61
+            11111000 | 22
+            11111001 | 71
+           111110100 | 81
+           111110101 | 14
+           111110110 | 32
+           111110111 | 91
+           111111000 | a1
+           111111001 | 7
+          1111110100 | 15
+          1111110101 | b1
+          1111110110 | 42
+          1111110111 | 23
+          1111111000 | c1
+          1111111001 | 52
+          1111111010 | d1
+         11111110110 | e1
+         11111110111 | 33
+         11111111000 | 16
+        111111110010 | 62
+        111111110011 | f0
+        111111110100 | 24
+        111111110101 | 72
+       1111111101100 | 82
+       1111111101101 | f1
+      11111111011100 | 25
+      11111111011101 | 43
+      11111111011110 | 34
+      11111111011111 | 53
+      11111111100000 | 92
+      11111111100001 | a2
+     111111111000100 | b2
+     111111111000101 | 63
+    1111111110001100 | 73
+    1111111110001101 | c2
+    1111111110001110 | 35
+    1111111110001111 | 44
+    1111111110010000 | 27
+    1111111110010001 | 93
+    1111111110010010 | a3
+    1111111110010011 | b3
+    1111111110010100 | 36
+    1111111110010101 | 17
+    1111111110010110 | 54
+    1111111110010111 | 64
+    1111111110011000 | 74
+    1111111110011001 | c3
+    1111111110011010 | d2
+    1111111110011011 | e2
+    1111111110011100 | 8
+    1111111110011101 | 26
+    1111111110011110 | 83
+    1111111110011111 | 9
+    1111111110100000 | a
+    1111111110100001 | 18
+    1111111110100010 | 19
+    1111111110100011 | 84
+    1111111110100100 | 94
+    1111111110100101 | 45
+    1111111110100110 | 46
+    1111111110100111 | a4
+    1111111110101000 | b4
+    1111111110101001 | 56
+    1111111110101010 | d3
+    1111111110101011 | 55
+    1111111110101100 | 28
+    1111111110101101 | 1a
+    1111111110101110 | f2
+    1111111110101111 | e3
+    1111111110110000 | f3
+    1111111110110001 | c4
+    1111111110110010 | d4
+    1111111110110011 | e4
+    1111111110110100 | f4
+    1111111110110101 | 65
+    1111111110110110 | 75
+    1111111110110111 | 85
+    1111111110111000 | 95
+    1111111110111001 | a5
+    1111111110111010 | b5
+    1111111110111011 | c5
+    1111111110111100 | d5
+    1111111110111101 | e5
+    1111111110111110 | f5
+    1111111110111111 | 66
+    1111111111000000 | 76
+    1111111111000001 | 86
+    1111111111000010 | 96
+    1111111111000011 | a6
+    1111111111000100 | b6
+    1111111111000101 | c6
+    1111111111000110 | d6
+    1111111111000111 | e6
+    1111111111001000 | f6
+    1111111111001001 | 37
+    1111111111001010 | 47
+    1111111111001011 | 57
+    1111111111001100 | 67
+    1111111111001101 | 77
+    1111111111001110 | 87
+    1111111111001111 | 97
+    1111111111010000 | a7
+    1111111111010001 | b7
+    1111111111010010 | c7
+    1111111111010011 | d7
+    1111111111010100 | e7
+    1111111111010101 | f7
+    1111111111010110 | 38
+    1111111111010111 | 48
+    1111111111011000 | 58
+    1111111111011001 | 68
+    1111111111011010 | 78
+    1111111111011011 | 88
+    1111111111011100 | 98
+    1111111111011101 | a8
+    1111111111011110 | b8
+    1111111111011111 | c8
+    1111111111100000 | d8
+    1111111111100001 | e8
+    1111111111100010 | f8
+    1111111111100011 | 29
+    1111111111100100 | 39
+    1111111111100101 | 49
+    1111111111100110 | 59
+    1111111111100111 | 69
+    1111111111101000 | 79
+    1111111111101001 | 89
+    1111111111101010 | 99
+    1111111111101011 | a9
+    1111111111101100 | b9
+    1111111111101101 | c9
+    1111111111101110 | d9
+    1111111111101111 | e9
+    1111111111110000 | f9
+    1111111111110001 | 2a
+    1111111111110010 | 3a
+    1111111111110011 | 4a
+    1111111111110100 | 5a
+    1111111111110101 | 6a
+    1111111111110110 | 7a
+    1111111111110111 | 8a
+    1111111111111000 | 9a
+    1111111111111001 | aa
+    1111111111111010 | ba
+    1111111111111011 | ca
+    1111111111111100 | da
+    1111111111111101 | ea
+    1111111111111110 | fa
+
+Table Class: 1
+Destination Identifier: 1
+                  00 | 1
+                  01 | 0
+                 100 | 2
+                 101 | 11
+                1100 | 3
+               11010 | 4
+               11011 | 21
+              111000 | 12
+              111001 | 31
+              111010 | 41
+             1110110 | 5
+             1110111 | 51
+             1111000 | 13
+             1111001 | 61
+             1111010 | 22
+            11110110 | 6
+            11110111 | 71
+            11111000 | 81
+            11111001 | 91
+            11111010 | 32
+           111110110 | a1
+           111110111 | b1
+           111111000 | f0
+           111111001 | 14
+          1111110100 | c1
+          1111110101 | d1
+          1111110110 | e1
+          1111110111 | 23
+          1111111000 | 42
+         11111110010 | 15
+         11111110011 | 52
+         11111110100 | 62
+         11111110101 | 72
+         11111110110 | f1
+         11111110111 | 33
+        111111110000 | 24
+        111111110001 | 34
+        111111110010 | 43
+        111111110011 | 82
+       1111111101000 | 16
+       1111111101001 | 92
+       1111111101010 | 53
+       1111111101011 | 25
+       1111111101100 | a2
+       1111111101101 | 63
+       1111111101110 | b2
+       1111111101111 | c2
+      11111111100000 | 7
+      11111111100001 | 73
+      11111111100010 | d2
+     111111111000110 | 35
+     111111111000111 | e2
+     111111111001000 | 44
+    1111111110010010 | 83
+    1111111110010011 | 17
+    1111111110010100 | 54
+    1111111110010101 | 93
+    1111111110010110 | 8
+    1111111110010111 | 9
+    1111111110011000 | a
+    1111111110011001 | 18
+    1111111110011010 | 19
+    1111111110011011 | 26
+    1111111110011100 | 36
+    1111111110011101 | 45
+    1111111110011110 | 1a
+    1111111110011111 | 27
+    1111111110100000 | 64
+    1111111110100001 | 74
+    1111111110100010 | 55
+    1111111110100011 | 37
+    1111111110100100 | f2
+    1111111110100101 | a3
+    1111111110100110 | b3
+    1111111110100111 | c3
+    1111111110101000 | 28
+    1111111110101001 | 29
+    1111111110101010 | d3
+    1111111110101011 | e3
+    1111111110101100 | f3
+    1111111110101101 | 84
+    1111111110101110 | 94
+    1111111110101111 | a4
+    1111111110110000 | b4
+    1111111110110001 | c4
+    1111111110110010 | d4
+    1111111110110011 | e4
+    1111111110110100 | f4
+    1111111110110101 | 65
+    1111111110110110 | 75
+    1111111110110111 | 85
+    1111111110111000 | 95
+    1111111110111001 | a5
+    1111111110111010 | b5
+    1111111110111011 | c5
+    1111111110111100 | d5
+    1111111110111101 | e5
+    1111111110111110 | f5
+    1111111110111111 | 46
+    1111111111000000 | 56
+    1111111111000001 | 66
+    1111111111000010 | 76
+    1111111111000011 | 86
+    1111111111000100 | 96
+    1111111111000101 | a6
+    1111111111000110 | b6
+    1111111111000111 | c6
+    1111111111001000 | d6
+    1111111111001001 | e6
+    1111111111001010 | f6
+    1111111111001011 | 47
+    1111111111001100 | 57
+    1111111111001101 | 67
+    1111111111001110 | 77
+    1111111111001111 | 87
+    1111111111010000 | 97
+    1111111111010001 | a7
+    1111111111010010 | b7
+    1111111111010011 | c7
+    1111111111010100 | d7
+    1111111111010101 | e7
+    1111111111010110 | f7
+    1111111111010111 | 38
+    1111111111011000 | 48
+    1111111111011001 | 58
+    1111111111011010 | 68
+    1111111111011011 | 78
+    1111111111011100 | 88
+    1111111111011101 | 98
+    1111111111011110 | a8
+    1111111111011111 | b8
+    1111111111100000 | c8
+    1111111111100001 | d8
+    1111111111100010 | e8
+    1111111111100011 | f8
+    1111111111100100 | 39
+    1111111111100101 | 49
+    1111111111100110 | 59
+    1111111111100111 | 69
+    1111111111101000 | 79
+    1111111111101001 | 89
+    1111111111101010 | 99
+    1111111111101011 | a9
+    1111111111101100 | b9
+    1111111111101101 | c9
+    1111111111101110 | d9
+    1111111111101111 | e9
+    1111111111110000 | f9
+    1111111111110001 | 2a
+    1111111111110010 | 3a
+    1111111111110011 | 4a
+    1111111111110100 | 5a
+    1111111111110101 | 6a
+    1111111111110110 | 7a
+    1111111111110111 | 8a
+    1111111111111000 | 9a
+    1111111111111001 | aa
+    1111111111111010 | ba
+    1111111111111011 | ca
+    1111111111111100 | da
+    1111111111111101 | ea
+    1111111111111110 | fa
+
+============================
+Segment Length: 12 bytes
+Start Of Scan
+----------------------------
+Image Conponents in Scan: 3
+Size Of Scan: 9 bytes
+Size Of Scan (after remove bitstuff): 8 bytes
+Total MCU count: 2
+MCU: 0
+	Component Selector: 1
+	Quantization Table Destination Selector: 0
+	DC Entropy Coding Table Destination Selector: 0
+	AC Entropy Coding Table Destination Selector: 0
+DC Code: a
+DC Bit Length: 10
+DC Value: -512
+Found EOB when decode AC!
+Extracted Component[0] 8x8 block: 
+-512,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After Quantization: 
+-1024,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After IDCT: 
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+-128,-128,-128,-128,-128,-128,-128,-128
+
+	Component Selector: 2
+	Quantization Table Destination Selector: 1
+	DC Entropy Coding Table Destination Selector: 1
+	AC Entropy Coding Table Destination Selector: 1
+Found EOB when decode DC!
+DC Code: 0
+DC Bit Length: 0
+DC Value: 0
+Found EOB when decode AC!
+Extracted Component[1] 8x8 block: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After Quantization: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After IDCT: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+	Component Selector: 3
+	Quantization Table Destination Selector: 1
+	DC Entropy Coding Table Destination Selector: 1
+	AC Entropy Coding Table Destination Selector: 1
+Found EOB when decode DC!
+DC Code: 0
+DC Bit Length: 0
+DC Value: 0
+Found EOB when decode AC!
+Extracted Component[2] 8x8 block: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After Quantization: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After IDCT: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+MCU: 1
+	Component Selector: 1
+	Quantization Table Destination Selector: 0
+	DC Entropy Coding Table Destination Selector: 0
+	AC Entropy Coding Table Destination Selector: 0
+DC Code: a
+DC Bit Length: 10
+DC Value: 508
+Found EOB when decode AC!
+Extracted Component[0] 8x8 block: 
+508,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After Quantization: 
+1016,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After IDCT: 
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+127,127,127,127,127,127,127,127
+
+	Component Selector: 2
+	Quantization Table Destination Selector: 1
+	DC Entropy Coding Table Destination Selector: 1
+	AC Entropy Coding Table Destination Selector: 1
+Found EOB when decode DC!
+DC Code: 0
+DC Bit Length: 0
+DC Value: 0
+Found EOB when decode AC!
+Extracted Component[1] 8x8 block: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After Quantization: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After IDCT: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+	Component Selector: 3
+	Quantization Table Destination Selector: 1
+	DC Entropy Coding Table Destination Selector: 1
+	AC Entropy Coding Table Destination Selector: 1
+Found EOB when decode DC!
+DC Code: 0
+DC Bit Length: 0
+DC Value: 0
+Found EOB when decode AC!
+Extracted Component[2] 8x8 block: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After Quantization: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+After IDCT: 
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0
+
+============================
+Segment Length: 0 bytes
+End Of Scan
+----------------------------
+Image
+-----
+Width: 16
+Height: 8
+Bit Count: 24
+Pitch: 48
+Data Size: 384
+0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	
+0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	
+0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	
+0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	
+0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	
+0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	
+0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	
+0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	0 0 0 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff 	ff ff ff </CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><B 
+style="FONT-WEIGHT: 600">参考引用</B></P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/JPEG_File_Interchange_Format" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">JPEG 
+  File Interchange Format</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A class=" external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//www.w3.org/Graphics/JPEG/itu-t81.pdf" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+  class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">https://www.</SPAN><SPAN 
+  class=visible>w3.org/Graphics/JPEG/it</SPAN><SPAN class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">u-t81.pdf</SPAN><SPAN 
+  class=ellipsis></SPAN></A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//www.impulseadventure.com/photo/jpeg-huffman-coding.html" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">JPEG 
+  Huffman Coding Tutorial</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/JPEG%23Discrete_cosine_transform" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">JPEG - 
+  Wikipedia</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/Huffman_coding" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Huffman 
+  coding - Wikipedia</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/YUV" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">YUV - 
+  Wikipedia</A></LI></OL></body>
+</html>
