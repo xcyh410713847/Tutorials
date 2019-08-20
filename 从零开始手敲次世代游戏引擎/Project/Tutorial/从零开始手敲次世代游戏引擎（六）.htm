@@ -1,0 +1,147 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（六）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/28633100" target=_blank >原文链接</A> </EM></P>
+<P>
+<EM>
+(未修改原文） 
+</EM></P>
+<P>
+<EM>正文开始：</EM>
+
+</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>现在我们已经有了一个跨平台的基本应用框架。接下来我们可以开始图形方面的编码了。<BR>参照我们编写应用模块的方式，我们可以很快地添加图形模块的骨架。<BR>让我们在Framework/Common下面添加两个文件：<BR>GraphicsManager.hpp:</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>#pragma once 
+#include "IRuntimeModule.hpp" 
+namespace My { 
+ class GraphicsManager : implements IRuntimeModule
+ { 
+ public:
+                virtual ~GraphicsManager() {} 
+ }; 
+}
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>GraphicsManager.cpp:</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>#include "GraphicsManager.hpp"</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>注意我们并没有重载那些纯虚函数。在我们真正开始实例化这个类之前，这是没有关系的。<BR>因为我们添加了文件，需要编辑Framework/Common下面的CMakeLists.txt，将新文件加入编译：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>add_library(Common 
+BaseApplication.cpp 
+GraphicsManager.cpp 
+main.cpp
+)</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，我们可以重新编译我们的代码了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>到目前为止，我们已经写了好几个文件，好几个类了。但是，从实现得功能上来讲，和（一）当中的hello 
+engine，基本上没有啥差别。那个甚至还有个输出，现在我们这个程序连输出都没有。<BR>所以，架构是有overhead，就是有额外的开销的。架构往往在给程序带来一种内部的结构，使概念上比较独立的部分解耦成单独的模块，从而更为方便可以进行部分的扩张和替换的同时，也带来了很多条条框框和额外的开销。某些本来从事务的流程上来说是线性的处理，因为模块的划分，需要分割到不同模块进行处理，从而使得代码不那么一目了然。<BR>在我们码农的日常当中，处于初级阶段的时候主要的精力可能放在一些语言特性和系统接口的认知方面；而到了中级阶段的时候可能最多的时间是花在了选择实现方法上面；到了高级阶段则就是常常面临着平衡问题。之前通过各种渠道所学的，自己所坚信的，都随着人生阅历的丰富变得不那么绝对，任何事情也都不再是黑白分明，有的只是灰多少的问题。<BR>但是平衡这种东西就是属于只可意会不可言传的范畴。它似乎是逝去的时间和自我反省的混合物，除了极个别的所谓天才，大多数人还是无法顿悟的。特别是对于我们所不熟悉的领域，在深入了解它之前就想进行架构设计，那只有一种方法：拍脑袋。这样的架构最后基本上是肯定还不如没有架构的。<BR>很多计算机领域的书籍都是按照架构设计-详细设计-实现这样完美地组织的。这是因为他们早就把《血缘》玩成了“无双”，然后才来做的梳理。这并没有什么不好，但绝不是拓荒的真实故事。<BR>因此，在我们进入图形模块的详细设计和编码之前，很有必要暂时接个支线任务。先忘记架构，抛开我们刚刚写的架子，用最为直观的方式，先探一下图形编程的路。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>-- 
+（图形支线任务开始）--</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在写作本文的时间点，图形API用得比较多的是微软的Direct 
+X系列，OpenGL系列，和苹果的Metal系列。手机上用的OpenGL 
+ES是OpenGL的一个子集。而Vulkan是最近刚刚兴起的一个图形API，被称为OpenGL的后继。Vulkan被称为OpenGL的后继是因为，Vulkan是由OpenGL的标准组织策定的。这个API本身和OpenGL并不是兼容的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>Direct 
+X系列是微软专利产品。其实早期微软推出Direct 
+X是迫于无奈的。早期的游戏，如《仙剑一》，都是基于DOS的。这种情况在Windows推出很多年之后，仍然是这样。大家坚守微软已经不更新的DOS，而不转移阵地到微软大力推荐的Windows的主要原因是当时的Windows只有一个图形API，叫GDI，那个是非常非常慢的一个图形API。如果用来做游戏，帧率简直惨不忍睹。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以，为了让大家都上Windows这条贼船，用劣币驱逐良币的玩法彻底搞死比Windows推出得更早的IBM 
+OS/2 Warp，以及苹果的Mac OS，微软急急忙忙地推出了Direct X。早期的Direct 
+X其实就是在微软幸幸苦苦封装的GDI上面打个洞，让应用程序能够直接使用比较底层的API，从而提高效率。（说穿了就是架构Overhead了，然后搭了个梯子完全绕开架构）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>但这种乱暴的方式其实依然没有能够收买多少游戏开发商的心。因为这种乱暴的手段带来性能提升的同时，也带来了蓝屏。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>-- 
+（题外话开始） --</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>知乎上最近很多人在讨论鹅厂的问题。其实，这是资本积累阶段常见的现象，早在2，30年前微软就玩过的东西。但是这并不妨碍微软今天成为大家心目中的偶像。所以鹅厂将来一片光明，做大了撒点钱洗洗就好，一年洗不干净就洗十年，总能洗干净的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>-- 
+（题外话结束）--</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这种局面的根本性改变，是在Win95之后，也就是在Windows一举占据家用电脑大半江山之后。凭借着舍我其谁的市场占有率，Direct 
+X反过来变成一种对于显卡厂商的强制标准。当然显卡厂商也并不是有多么憋屈，听话就不愁卖，大家Happy。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>-- 
+（题外话开始） --</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以不要听近年的企业吹嘘什么互联网思想，共享经济。说穿了就是不择手段垄断市场，然后怎么都能赚钱，就是这么一回儿事情。只不过对于传统的制造业服务业来说，法规成熟，不允许倾销；但到了互联网这里，人家服务业，免费提供服务，不算倾销。绑架用户也不叫绑架，叫扫码登陆，免费用券。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>-- 
+（题外话结束）--</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>Direct 
+X发展到今天，由于商业利益链条的形成，倒确确实实是推动图形硬件发展的先锋力量了。微软在这方面做了大量的工作，普及了先端科技，培养了大量的人才。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>近代GPU方面一个较大的变化就是GPGPU的出现。在DX9之前的时代，图形渲染管道是固定的。也就是说，除了通过调整一些参数有限地改变GPU的行为之外，是没有办法对GPU的行为进行自定义编程的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然而从DX9时代之后，出现了GPGPU。GPU变得和CPU一样，可以跑我们码农写的程序了。甚至，一些GPU开始不务正业了，并不是用来绘图，而是用来挖矿，算天气，跑阿尔法狗。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>而OpenGL是来自于工业界，AutoCAD什么的。其最大的特点除了支持多平台之外，就是封装得比较彻底，或者说API比较傻瓜。傻瓜到网页也可以用它来画图，这个叫WebGL。如果你还没有体验过的话，可以到下面这个地方去逛一逛。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//get.webgl.org/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+class=invisible 
+style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">https://</SPAN><SPAN 
+class=visible>get.webgl.org/</SPAN><SPAN class=invisible 
+style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none"></SPAN></A></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然而这还是一个平衡问题。高度的封装固然对于CAD软件的开发来说是个好事，但是对于游戏这种软实时系统来说，就显得过于臃肿。OpenGL当中有非常复杂的状态管理和预测机制，它时时刻刻都在试图推测应用程序的意图，来弥补过于简单抽象的API造成的信息不足的问题。就好比我写这个专栏，很多人觉得写得太细太罗嗦，并不需要交代那么多基础的事情。这是因为这些人他们自己有一套完整的知识体系，你只需要给他们一个方向，然后他们自行可以脑补很多。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这对于我来说当然是很省力的好事。然而，在软件开发当中，这也意味着更少的控制力。我们无法知道OpenGL到底是怎么去做这件事情，什么时候开始做，大概需要多久。我们甚至不能确保结果是完全符合我们期待的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>同样的情况，也存在在DX12之前（不含）的DX 
+API当中。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>而主机平台，就如我之前的文章所介绍的，从历史上就是厂商把集成块焊接好，然后写个最基本的系统，把硬件接口暴露出来，剩下的就是游戏开发商自己好自为之了。所以主机历来是一个十分高效的平台，因为它没有那么多封装，架构，额外的开销。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>随着PC游戏的飞速发展，DX/OpenGL面临了再一次的挑战。之前为了减少开发者负担所做的种种努力，在今天看来相当一部分反而成为了束缚性能的“并不需要的东西”。DX 
+12/Vulkan/Metal就是在这样的环境下诞生出来的新一代图形API。这些API更接近主机所提供的图形API。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以，在接下来的文章当中，我们将逐个体验这些图形API，用这些API开发一些最基本的图形程序，然后抽象出他们的共性。基于这些共性，我们就可以进行我们渲染模块的详细设计了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>-- 
+（EOF）--</P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.jpg" 
+width=88 data-rawwidth="88" data-rawheight="31" 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.jpg" 
+data-size="normal"></FIGURE>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P></body>
+</html>

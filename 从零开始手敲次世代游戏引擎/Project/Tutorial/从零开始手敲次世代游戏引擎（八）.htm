@@ -1,0 +1,191 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（八）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P>
+<EM>
+<A href="https://zhuanlan.zhihu.com/p/28665581" target=_blank >
+原文链接 
+
+</A>
+</EM></P>
+<P>
+<EM >
+ (未修改原文）</EM></P>
+<P >
+
+<EM>
+正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>上一篇我们在Windows上面创建了一个最基本的窗体。本篇我们将在Linux上面创建一个窗体。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>如果说Windows的窗体是深深植入系统的，那么Linux的窗体系统则更像一个外挂。在Linux当中，图形界面是交给一个叫做Xserver的服务进行绘制管理，而客户端程序实际上并不直接绘制画面，而是生成一系列画面绘制指令，通过一种事先定义好的协议（X协议），发送给Xserver。Xserver根据这些绘图指令进行实际的绘图。打个小小的比方，X协议就好比HTML，而Xserver就好比浏览器。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>也就是说，Linux的图形界面部分，其实是client-server结构，具有天生的分布式能力。事实上，你可以在你的安卓手机上安装一个Xserver，然后让远程的服务器将绘图指令发送到你的手机上，这样桌面就是由你的手机的硬件绘制的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这和VNC技术以及RDP技术（Windows远程桌面技术）有着本质的不同。VNC/RDP技术的图形绘制是发生在远程机器的，而本地机器只是播放远程机器传来的实时视频流。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>XCB则是X协议的C绑定。通过XCB，我们可以方便地生成遵循X协议指令，最终将这些指令发给Xserver完成绘制。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来就让我们通过XCB创建一个Linux的窗口。在我们的项目里新建一个Platform/Linux目录，在其中创建一个helloengine_xcb.c，然后输入如下代码:</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-c style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;stdio.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;stdlib.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;string.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;xcb/xcb.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">main</SPAN><SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN>
+        <SPAN class=n>xcb_connection_t</SPAN>        <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>xcb_screen_t</SPAN>            <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>pScreen</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>xcb_window_t</SPAN>            <SPAN class=n>window</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>xcb_gcontext_t</SPAN>          <SPAN class=n>foreground</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>xcb_gcontext_t</SPAN>          <SPAN class=n>background</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>xcb_generic_event_t</SPAN>     <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>pEvent</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>uint32_t</SPAN>                <SPAN class=n>mask</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>uint32_t</SPAN>                <SPAN class=n>values</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">2</SPAN><SPAN class=p>];</SPAN>
+        <SPAN class=n>uint8_t</SPAN>                 <SPAN class=n>isQuit</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=n>title</SPAN><SPAN class=p>[]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"Hello, Engine!"</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">char</SPAN> <SPAN class=n>title_icon</SPAN><SPAN class=p>[]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"Hello, Engine! (iconified)"</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* establish connection to X server */</SPAN>
+        <SPAN class=n>pConn</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>xcb_connect</SPAN><SPAN class=p>(</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* get the first screen */</SPAN>
+        <SPAN class=n>pScreen</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>xcb_setup_roots_iterator</SPAN><SPAN class=p>(</SPAN><SPAN class=n>xcb_get_setup</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>)).</SPAN><SPAN class=n>data</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* get the root window */</SPAN>
+        <SPAN class=n>window</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>pScreen</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>root</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* create black (foreground) graphic context */</SPAN>
+        <SPAN class=n>foreground</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>xcb_generate_id</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=n>mask</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>XCB_GC_FOREGROUND</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">|</SPAN> <SPAN class=n>XCB_GC_GRAPHICS_EXPOSURES</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>values</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>pScreen</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>black_pixel</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>values</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>xcb_create_gc</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>foreground</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>window</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>mask</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>values</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* create white (background) graphic context */</SPAN>
+        <SPAN class=n>background</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>xcb_generate_id</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=n>mask</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>XCB_GC_BACKGROUND</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">|</SPAN> <SPAN class=n>XCB_GC_GRAPHICS_EXPOSURES</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>values</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>pScreen</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>white_pixel</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>values</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>xcb_create_gc</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>background</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>window</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>mask</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>values</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* create window */</SPAN>
+        <SPAN class=n>window</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>xcb_generate_id</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=n>mask</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>XCB_CW_BACK_PIXEL</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">|</SPAN> <SPAN class=n>XCB_CW_EVENT_MASK</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>values</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>pScreen</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>white_pixel</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>values</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>XCB_EVENT_MASK_EXPOSURE</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">|</SPAN> <SPAN class=n>XCB_EVENT_MASK_KEY_PRESS</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>xcb_create_window</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>,</SPAN>                                       <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* connection */</SPAN>
+                                           <SPAN class=n>XCB_COPY_FROM_PARENT</SPAN><SPAN class=p>,</SPAN>        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* depth */</SPAN>
+                                           <SPAN class=n>window</SPAN><SPAN class=p>,</SPAN>                                      <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* window ID */</SPAN>
+                                           <SPAN class=n>pScreen</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>root</SPAN><SPAN class=p>,</SPAN>                       <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* parent window */</SPAN>
+                                           <SPAN class=mi style="COLOR: rgb(0,132,255)">20</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">20</SPAN><SPAN class=p>,</SPAN>                                      <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* x, y */</SPAN>
+                                           <SPAN class=mi style="COLOR: rgb(0,132,255)">640</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">480</SPAN><SPAN class=p>,</SPAN>                            <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* width, height */</SPAN>
+                                           <SPAN class=mi style="COLOR: rgb(0,132,255)">10</SPAN><SPAN class=p>,</SPAN>                                          <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* boarder width */</SPAN>
+                                           <SPAN class=n>XCB_WINDOW_CLASS_INPUT_OUTPUT</SPAN><SPAN class=p>,</SPAN> <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* class */</SPAN>
+                                           <SPAN class=n>pScreen</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>root_visual</SPAN><SPAN class=p>,</SPAN>        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* visual */</SPAN>
+                                           <SPAN class=n>mask</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>values</SPAN><SPAN class=p>);</SPAN>                       <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* masks */</SPAN>
+
+        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* set the title of the window */</SPAN>
+        <SPAN class=n>xcb_change_property</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>XCB_PROP_MODE_REPLACE</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>window</SPAN><SPAN class=p>,</SPAN>
+                            <SPAN class=n>XCB_ATOM_WM_NAME</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>XCB_ATOM_STRING</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN>
+                            <SPAN class=n>strlen</SPAN><SPAN class=p>(</SPAN><SPAN class=n>title</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>title</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* set the title of the window icon */</SPAN>
+        <SPAN class=n>xcb_change_property</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>XCB_PROP_MODE_REPLACE</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>window</SPAN><SPAN class=p>,</SPAN>
+                            <SPAN class=n>XCB_ATOM_WM_ICON_NAME</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>XCB_ATOM_STRING</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN>
+                            <SPAN class=n>strlen</SPAN><SPAN class=p>(</SPAN><SPAN class=n>title_icon</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>title_icon</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* map the window on the screen */</SPAN>
+        <SPAN class=n>xcb_map_window</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>window</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=n>xcb_flush</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">while</SPAN><SPAN class=p>((</SPAN><SPAN class=n>pEvent</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>xcb_wait_for_event</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>))</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&amp;&amp;</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>isQuit</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">switch</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pEvent</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>response_type</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">~</SPAN><SPAN class=mh style="COLOR: rgb(0,132,255)">0x80</SPAN><SPAN class=p>)</SPAN> <SPAN class=p>{</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=nl>XCB_EXPOSE</SPAN><SPAN class=p>:</SPAN>
+                        <SPAN class=k style="FONT-WEIGHT: 600">break</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=nl>XCB_KEY_PRESS</SPAN><SPAN class=p>:</SPAN>
+                        <SPAN class=n>isQuit</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>;</SPAN>
+                        <SPAN class=k style="FONT-WEIGHT: 600">break</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=p>}</SPAN>
+                <SPAN class=n>free</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pEvent</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=p>}</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>用clang编译这个代码。注意需要链接xcb库。如果clang抱怨找不到这个库，请用yum或者apt安装。在CentOS里这个包叫xcb-devel，在Ubuntu里应该是叫libxcb-dev（未亲自验证）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>tim@iZuf6iup3mphicesefdwajZ:~/src/GameEngineFromScratch/Platform/Linux$ clang -lxcb -o helloengine_xcb helloengine_xcb.c</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>编译通过之后执行这个代码，就可以看到如图所示的窗口了。注意，同样的，需要在桌面环境当中执行。</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic1.zhimg.com/80/v2-7c16fb72c183999d0da0e15deb2fc568_hd.png" 
+width=1026 data-rawwidth="1026" data-rawheight="830" 
+data-actualsrc="https://pic1.zhimg.com/v2-7c16fb72c183999d0da0e15deb2fc568_b.png" 
+data-original="https://pic1.zhimg.com/v2-7c16fb72c183999d0da0e15deb2fc568_r.jpg"></FIGURE>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>（-- 
+EOF --）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>参考引用：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//www.x.org/releases/X11R7.6/doc/libxcb/tutorial/index.html" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Basic 
+  Graphics Programming With The XCB Library</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//xcb.freedesktop.org/tutorial/" 
+  rel="nofollow noreferrer" target=_blank 
+  data-za-detail-view-id="1043">tutorial</A></LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/XCB" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">XCB - 
+  Wikipedia</A></LI></OL>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.png" 
+width=88 data-rawwidth="88" data-rawheight="31" 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.png"></FIGURE>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P></body>
+</html>

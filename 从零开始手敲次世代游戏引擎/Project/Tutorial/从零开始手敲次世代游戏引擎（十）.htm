@@ -1,0 +1,690 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（十）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/28711014" target=_blank >原文链接 </A></EM></P>
+<P><EM>(未修改原文）</EM></P>
+<P><EM>正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>上一篇文章我们分别使用GDI(Windows)和XCB(Linux)在窗体当中绘制了一个矩形。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然而，这些矩形其实是由CPU绘制的，而不是GPU。因此这种绘制方式是很慢的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本篇开始我们使用GPU完成图形的绘制。首先让我们看一下Windows平台特有的Direct 
+X。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>Direct 
+X在早期其实分为几个模块：专门绘制2D图形的DirectDraw（现在改名为Direct2D），专门绘制3D图形的Direct3D，专门用于多媒体播放的DirectShow，等等。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们首先来看看使用Direct2D来进行绘制的代码是什么样子的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因为D2D只是提供一种用GPU绘制图形的方式，创建窗口等操作还是和以前一样的，也就是说我们可以重用之前写的helloengine_win.c的大部分代码。另外，为了将来可以很方便的在CPU绘制和GPU绘制之间切换比较，我们应该保留helloengine_win.c。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以，首先将helloengine_win.c复制一份，命名为helloengine_d2d.cpp。（改为.cpp后缀的原因是我们将要使用的d2d的头文件需要按照C++方式编译）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后如下修改这个文件（左侧有”+“号的行为新增加的行，”-“的行为删除的行）：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>（本文代码参考MSDN 
+Direct 2D教程编写）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>@@ -3,6 +3,63 @@
+ #include &lt;windowsx.h&gt;
+ #include &lt;tchar.h&gt;
+
++#include &lt;d2d1.h&gt;
++
++ID2D1Factory           *pFactory = nullptr;
++ID2D1HwndRenderTarget  *pRenderTarget = nullptr;
++ID2D1SolidColorBrush   *pLightSlateGrayBrush = nullptr;
++ID2D1SolidColorBrush   *pCornflowerBlueBrush = nullptr;
++
++template&lt;class T&gt;
++inline void SafeRelease(T **ppInterfaceToRelease)
++{
++    if (*ppInterfaceToRelease != nullptr)
++    {
++        (*ppInterfaceToRelease)-&gt;Release();
++
++        (*ppInterfaceToRelease) = nullptr;
++    }
++}
++
++HRESULT CreateGraphicsResources(HWND hWnd)
++{
++    HRESULT hr = S_OK;
++    if (pRenderTarget == nullptr)
++    {
++        RECT rc;
++        GetClientRect(hWnd, &amp;rc);
++
++        D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left,
++                        rc.bottom - rc.top);
++
++        hr = pFactory-&gt;CreateHwndRenderTarget(
++            D2D1::RenderTargetProperties(),
++            D2D1::HwndRenderTargetProperties(hWnd, size),
++            &amp;pRenderTarget);
++
++        if (SUCCEEDED(hr))
++        {
++            hr = pRenderTarget-&gt;CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::LightSlateGray), &amp;pLightSlateGrayBrush);
++
++        }
++
++        if (SUCCEEDED(hr))
++        {
++            hr = pRenderTarget-&gt;CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::CornflowerBlue), &amp;pCornflowerBlueBrush);
++
++        }
++    }
++    return hr;
++}
++
++void DiscardGraphicsResources()
++{
++    SafeRelease(&amp;pRenderTarget);
++    SafeRelease(&amp;pLightSlateGrayBrush);
++    SafeRelease(&amp;pCornflowerBlueBrush);
++}
++
++
+ // the WindowProc function prototype
+ LRESULT CALLBACK WindowProc(HWND hWnd,
+                          UINT message,
+@@ -20,6 +77,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
+     // this struct holds information for the window class
+     WNDCLASSEX wc;
+
++    // initialize COM
++    if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE))) return -1;
++
+     // clear out the window class for use
+     ZeroMemory(&amp;wc, sizeof(WNDCLASSEX));
+
+@@ -28,7 +88,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
+     wc.style = CS_HREDRAW | CS_VREDRAW;
+     wc.lpfnWndProc = WindowProc;
+     wc.hInstance = hInstance;
+-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
++    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+     wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+     wc.lpszClassName = _T("WindowClass1");
+
+@@ -38,12 +98,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
+     // create the window and use the result as the handle
+     hWnd = CreateWindowEx(0,
+                           _T("WindowClass1"),    // name of the window class
+-                          _T("Hello, Engine!"),   // title of the window
++                          _T("Hello, Engine![Direct 2D]"),   // title of the window
+                           WS_OVERLAPPEDWINDOW,    // window style
+-                          300,    // x-position of the window
+-                          300,    // y-position of the window
+-                          500,    // width of the window
+-                          400,    // height of the window
++                          100,    // x-position of the window
++                          100,    // y-position of the window
++                          960,    // width of the window
++                          540,    // height of the window
+                           NULL,    // we have no parent window, NULL
+                           NULL,    // we aren't using menus, NULL
+                           hInstance,    // application handle
+@@ -58,7 +118,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
+     MSG msg;
+
+     // wait for the next message in the queue, store the result in 'msg'
+-    while(GetMessage(&amp;msg, NULL, 0, 0))
++    while(GetMessage(&amp;msg, nullptr, 0, 0))
+     {
+         // translate keystroke messages into the right format
+         TranslateMessage(&amp;msg);
+@@ -67,6 +127,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
+         DispatchMessage(&amp;msg);
+     }
+
++    // uninitialize COM
++    CoUninitialize();
++
+     // return this part of the WM_QUIT message to Windows
+     return msg.wParam;
+ }
+@@ -74,30 +137,126 @@ int WINAPI WinMain(HINSTANCE hInstance,
+ // this is the main message handler for the program
+ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+ {
++    LRESULT result = 0;
++    bool wasHandled = false;
++
+     // sort through and find what code to run for the message given
+     switch(message)
+     {
++       case WM_CREATE:
++               if (FAILED(D2D1CreateFactory(
++                                       D2D1_FACTORY_TYPE_SINGLE_THREADED, &amp;pFactory)))
++               {
++                       result = -1; // Fail CreateWindowEx.
++                       return result;
++               }
++               wasHandled = true;
++        result = 0;
++        break;
++
+        case WM_PAINT:
+            {
+-               PAINTSTRUCT ps;
+-               HDC hdc = BeginPaint(hWnd, &amp;ps);
+-               RECT rec = { 20, 20, 60, 80 };
+-               HBRUSH brush = (HBRUSH) GetStockObject(BLACK_BRUSH);
+-
+-               FillRect(hdc, &amp;rec, brush);
+-
+-               EndPaint(hWnd, &amp;ps);
+-           } break;
+-        // this message is read when the window is closed
+-        case WM_DESTROY:
+-            {
+-                // close the application entirely
+-                PostQuitMessage(0);
+-                return 0;
+-            } break;
++                       HRESULT hr = CreateGraphicsResources(hWnd);
++                       if (SUCCEEDED(hr))
++                       {
++                               PAINTSTRUCT ps;
++                               BeginPaint(hWnd, &amp;ps);
++
++                               // start build GPU draw command
++                               pRenderTarget-&gt;BeginDraw();
++
++                               // clear the background with white color
++                               pRenderTarget-&gt;Clear(D2D1::ColorF(D2D1::ColorF::White));
++
++                // retrieve the size of drawing area
++                D2D1_SIZE_F rtSize = pRenderTarget-&gt;GetSize();
++
++                // draw a grid background.
++                int width = static_cast&lt;int&gt;(rtSize.width);
++                int height = static_cast&lt;int&gt;(rtSize.height);
++
++                for (int x = 0; x &lt; width; x += 10)
++                {
++                    pRenderTarget-&gt;DrawLine(
++                        D2D1::Point2F(static_cast&lt;FLOAT&gt;(x), 0.0f),
++                        D2D1::Point2F(static_cast&lt;FLOAT&gt;(x), rtSize.height),
++                        pLightSlateGrayBrush,
++                        0.5f
++                        );
++                }
++
++                for (int y = 0; y &lt; height; y += 10)
++                {
++                    pRenderTarget-&gt;DrawLine(
++                        D2D1::Point2F(0.0f, static_cast&lt;FLOAT&gt;(y)),
++                        D2D1::Point2F(rtSize.width, static_cast&lt;FLOAT&gt;(y)),
++                        pLightSlateGrayBrush,
++                        0.5f
++                        );
++                }
++
++                // draw two rectangles
++                D2D1_RECT_F rectangle1 = D2D1::RectF(
++                     rtSize.width/2 - 50.0f,
++                     rtSize.height/2 - 50.0f,
++                     rtSize.width/2 + 50.0f,
++                     rtSize.height/2 + 50.0f
++                     );
++
++                 D2D1_RECT_F rectangle2 = D2D1::RectF(
++                     rtSize.width/2 - 100.0f,
++                     rtSize.height/2 - 100.0f,
++                     rtSize.width/2 + 100.0f,
++                     rtSize.height/2 + 100.0f
++                     );
++
++                // draw a filled rectangle
++                pRenderTarget-&gt;FillRectangle(&amp;rectangle1, pLightSlateGrayBrush);
++
++                // draw a outline only rectangle
++                pRenderTarget-&gt;DrawRectangle(&amp;rectangle2, pCornflowerBlueBrush);
++
++                               // end GPU draw command building
++                               hr = pRenderTarget-&gt;EndDraw();
++                               if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
++                               {
++                                       DiscardGraphicsResources();
++                               }
++
++                               EndPaint(hWnd, &amp;ps);
++                       }
++           }
++               wasHandled = true;
++        break;
++
++       case WM_SIZE:
++               if (pRenderTarget != nullptr)
++               {
++                       RECT rc;
++                       GetClientRect(hWnd, &amp;rc);
++
++                       D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top);
++
++                       pRenderTarget-&gt;Resize(size);
++               }
++               wasHandled = true;
++        break;
++
++       case WM_DESTROY:
++               DiscardGraphicsResources();
++               if (pFactory) {pFactory-&gt;Release(); pFactory=nullptr; }
++               PostQuitMessage(0);
++        result = 0;
++               wasHandled = true;
++        break;
++
++    case WM_DISPLAYCHANGE:
++        InvalidateRect(hWnd, nullptr, false);
++        wasHandled = true;
++        break;
+     }
+
+     // Handle any messages the switch statement didn't
+-    return DefWindowProc (hWnd, message, wParam, lParam);
++    if (!wasHandled) { result = DefWindowProc (hWnd, message, wParam, lParam); }
++    return result;
+ }</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>简单说明一下：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先，包含了d2d1.h。这是一个Direct2D的Wrapper，也就是一个对Direct2D进行了简单的包装的头文件。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后，定义了如下4个全局变量：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>ID2D1Factory           *pFactory = nullptr;
+ID2D1HwndRenderTarget  *pRenderTarget = nullptr;
+ID2D1SolidColorBrush   *pLightSlateGrayBrush = nullptr;
+ID2D1SolidColorBrush   *pCornflowerBlueBrush = nullptr;</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>第一个是程序设计模式(Design 
+Pattern)当中的所谓建造工厂的一个接口。第二个到第四个与我们应该已经比较眼熟了，一个是渲染对象，就是画布，后面是两支画笔。不过这里的都是COM的接口。也就是说，这些对象实际上是存在于COM当中的，我们的程序只是拥有一个指向它们的接口。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>D2D的库是以一种被称为”COM组件“的方式提供的。粗略地来说类似于Java当中的Reflection，不仅仅是一个动态库，而且这个库所提供的API也是可以动态查询的，而不是事先通过头文件进行申明。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>"COM"自身是一个很复杂的概念，是微软当时为了让Office能够在办公软件当中胜出，所开发出来的一种技术。在Office当中使用的基于"COM"的技术主要有"OLE"和”DDE“。前者是嵌入式对象，就是我们可以把一个视频、或者一个别的什么原本Office当中不支持的文件，放到Office文档当中。然后这个东西就会显示为一个图标，或者是一个静态的图片(snapshot)，双击这个图标或者这个静态的图片就会启动能够支持这个格式的软件对其进行播放或者编辑。这种播放或者编辑有两种形式：一种是in 
+place，就是直接在Office文档当中进行，另一种是standalone，就是在Office之外进行。in 
+place的时候，其实是在后台启动能够支持这种格式的一个程序，但是隐藏其窗口。然后把Office当中的一小块客户区域（就是之前我们用过的Rect所定义的一个矩形区域）传递给这个后台程序，让其负责处理这块区域的绘制和用户输入。也就是说，在Office程序的WM_PAINT事件的处理当中，将Office窗口的整个客户区域分割为由自己绘制的部分和由OLE绘制的部分，由OLE绘制的部分通过COM技术传递给后台应用进行绘制。比如我们嵌入的OLE对象是一个视频，那么当你在Office文档内播放这个视频的时候，实际上后台会启动Windows 
+Media Player，只不过它的界面是隐藏的。Windows Media 
+Player对视频进行解码播放，只不过和平常不一样的是，最后画面不是画在Windows Media 
+Player自己的窗体上，而是画在Office文档当中的一块矩形区域当中。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>最常见的应用就是在PPT里面放一个视频，或者放一个Excel表格，Word文档什么的。这个其实就是用的"OLE"技术。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>而”DDE“大部分和"OLE"类似，所不同的是这个对象是单独存放在磁盘上，而不是嵌入到Office文档当中进行保存的。我们将一个Excel拖入到PPT的时候，Office会问我们是作为嵌入式对象，还是链接。嵌入式对象就是"OLE"，而链接就是"DDE"。“DDE” 
+的特点是你可以随时在外部编辑那个文件，而改变会自动反映到使用“DDE”链接进的那个文档当中。也就是说，如果你用“链接”的方式把一个Excel放入PPT，那么后面如果你修改了那个Excel，PPT里面的那个Excel对象的数据也会跟着变。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>除了这种应用，Windows服务，DirectX 
+3D当中所用的filter，.NET技术，IE 
+Browser所用的插件，Office所用的插件，等等，都是基于"COM"技术。”COM“技术还有后继的"COM+"技术以及在多个电脑上分布式处理的”DCOM“（在Windows 
+Server当中我们可以由一台服务器部署管理其它服务器，就是靠着“DCOM”） 技术。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>--（题外话开始） 
+--</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>笔者刚刚参加工作的时候，所在的项目组是负责一台名为”Morpheus“的台式机的开发（正式商品名”VAIO 
+Type X")</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//www.vaio.sony.co.jp/Products/VGX-X90P/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+class=invisible 
+style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">http://www.</SPAN><SPAN 
+class=visible>vaio.sony.co.jp/Product</SPAN><SPAN class=invisible 
+style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">s/VGX-X90P/</SPAN><SPAN 
+class=ellipsis></SPAN></A></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这台机器可以支持7个电视频道同时24小时x7天无缝录像。当时一套的售价（含显示器）是大约100万日元，按那个时候的汇率大概是7-8万RMB。（东京只有7个免费电视频道）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我当时进入公司的时候这个项目的开发已经接近一半。也就是硬件基本设计定型了而软件才刚刚开始。这个时候公司突然决定要去参加一个VAIO的市场活动，需要展示这台巨无霸机器。然而如果只是展示硬件颇为无趣，所以想要展示录像功能，虽然录像功能并没有做好。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以，需要快速地开发一种替代模式来进行展示。当时的别的型号的VAIO也是可以录像的，只不过每台只能录制一个频道。所以为了实现7个频道的同时录制，就需要7台电脑同时工作一个礼拜。但是如果只是将7台电脑打开放在那里，录制的节目是连续的，并不会按照电子节目单（EPG）进行分割。而如果找7个人去手动按开始结束，在国内可能可行，在日本这个开销就大了。因为要3班倒，需要21个人。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>笔者采用DCOM解决了这个问题。就是写个程序去按照EPG点开始和结束，然后导入第8台机器，下载分析EPG并通过DCOM去控制那7台电脑上面的程序。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>--（题外话结束） 
+--</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>不过这个“COM” 
+技术虽然很NB，但并不是微软原创的技术。这种技术实际上是一种名为"CORBA(<A class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//www.corba.org/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Welcome To 
+CORBA Web Site!</A>)"的技术的微软版本而已。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>+
++template&lt;class T&gt;
++inline void SafeRelease(T **ppInterfaceToRelease)
++{
++    if (*ppInterfaceToRelease != nullptr)
++    {
++        (*ppInterfaceToRelease)-&gt;Release();
++
++        (*ppInterfaceToRelease) = nullptr;
++    }
++}
++</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这是我们写的第一个使用了C++模板机制的函数。模板也称为泛型，具体就不展开了，有兴趣的可以去看C++的书。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>+HRESULT CreateGraphicsResources(HWND hWnd)
++{
++    HRESULT hr = S_OK;
++    if (pRenderTarget == nullptr)
++    {
++        RECT rc;
++        GetClientRect(hWnd, &amp;rc);
++
++        D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left,
++                        rc.bottom - rc.top);
++
++        hr = pFactory-&gt;CreateHwndRenderTarget(
++            D2D1::RenderTargetProperties(),
++            D2D1::HwndRenderTargetProperties(hWnd, size),
++            &amp;pRenderTarget);
++
++        if (SUCCEEDED(hr))
++        {
++            hr = pRenderTarget-&gt;CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::LightSlateGray), &amp;pLightSlateGrayBrush);
++
++        }
++
++        if (SUCCEEDED(hr))
++        {
++            hr = pRenderTarget-&gt;CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::CornflowerBlue), &amp;pCornflowerBlueBrush);
++
++        }
++    }
++    return hr;
++}</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个函数的作用是创建绘图所需要的画布、画笔。使用GPU绘图的时候，这个部分其实是有很多工作需要做的。然而这些D2D都为我们封装好了，所以我们可以简简单单地，以一种非常接近于GDI的方式去调用。（但同时是使我们少了很多控制力，这个就是之前所说的新的DX12所要解决的问题）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>+void DiscardGraphicsResources()
++{
++    SafeRelease(&amp;pRenderTarget);
++    SafeRelease(&amp;pLightSlateGrayBrush);
++    SafeRelease(&amp;pCornflowerBlueBrush);
++}
++</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个是用来释放画布、画笔所对应的GPU资源的。使用了我们上面定义的泛型函数。在我们这个例子里面，需要释放这些资源的主要有两种情况：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">窗口的大小发生了改变</LI>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">窗口被销毁（程序结束）</LI></OL>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>+    // initialize COM
++    if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE))) return -1;
++</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>初始化COM。所有使用COM的程序，都需要在程序的开头做这么个调用，因为COM和普通动态库不同，它其实是一个比较独立的东西，有自己的一套机制。（其实动态库在使用之前也是需要加载的。只不过很多只在Windows上面写程序的程序员，因为微软深度傻瓜封装的关系，不太知道）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>第一个参数是固定为nullptr（就是0。因为C++是强类型语言，0是一个整数，而空指针应该是指针类型，所以C++ 
+11里面定义了这个nullptr，用来取代之前的0，来满足类型匹配的要求）。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>第二个参数由两部分组成。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>COINIT_APARTMENTTHREADED</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个是告诉COM以一种所谓STA的方式运行。很粗略的来说可以认为COM组件是以一种与我们程序同步的方式运行。如果想知道细节请参考COM相关资料，比如下面这篇官方文档：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//msdn.microsoft.com/en-us/library/windows/desktop/ms678505%28v%3Dvs.85%29.aspx" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">COINIT 
+enumeration</A></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>简单来说，就如我上面解释“OLE”的时候介绍的，其实这个时候在我们的窗体之外，D2D 
+COM会创建一个隐藏的窗体，然后监视着我们的窗体的消息队列。同时，所有的绘制都重定向到我们的窗体，而不是它自己的窗体。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>COINIT_DISABLE_OLE1DDE</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个是关闭一些已经过时的COM功能，减少不必要的开销。</P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>既然我们在应用程序初始化的时候初始化了COM组件，那么我们就需要在应用程序结束的地方结束它：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>+    // uninitialize COM
++    CoUninitialize();
++</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们需要在窗口创建的过程当中创建Factory工厂。因为只有有了工厂我们才能创建画布、画笔。（在前面GDI或者XCB的代码当中，因为这些对象都是我们程序内部创建的，所以我们并不需要工厂。但是，现在我们是使用D2D，对象是在游离在我们程序本体之外的一个COM组件里面创建的。对于这些对象我们所知甚少，所以就要通过工厂创建。打个比喻，“外包”）。WM_CREATE是在我们调用CreateWindowEx()这个系统API的时候，系统回调我们的消息处理函数所发送给我们的消息。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>+       case WM_CREATE:
++               if (FAILED(D2D1CreateFactory(
++                                       D2D1_FACTORY_TYPE_SINGLE_THREADED, &amp;pFactory)))
++               {
++                       result = -1; // Fail CreateWindowEx.
++                       return result;
++               }
++               wasHandled = true;
++        result = 0;
++        break;
++</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后改动最大的部分，WM_PAINT消息处理部分：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>+                       HRESULT hr = CreateGraphicsResources(hWnd);
++                       if (SUCCEEDED(hr))
++                       {
++                               PAINTSTRUCT ps;
++                               BeginPaint(hWnd, &amp;ps);
++
++                               // start build GPU draw command
++                               pRenderTarget-&gt;BeginDraw();
++
++                               // clear the background with white color
++                               pRenderTarget-&gt;Clear(D2D1::ColorF(D2D1::ColorF::White));
++
++                // retrieve the size of drawing area
++                D2D1_SIZE_F rtSize = pRenderTarget-&gt;GetSize();
++
++                // draw a grid background.
++                int width = static_cast&lt;int&gt;(rtSize.width);
++                int height = static_cast&lt;int&gt;(rtSize.height);
++
++                for (int x = 0; x &lt; width; x += 10)
++                {
++                    pRenderTarget-&gt;DrawLine(
++                        D2D1::Point2F(static_cast&lt;FLOAT&gt;(x), 0.0f),
++                        D2D1::Point2F(static_cast&lt;FLOAT&gt;(x), rtSize.height),
++                        pLightSlateGrayBrush,
++                        0.5f
++                        );
++                }
++
++                for (int y = 0; y &lt; height; y += 10)
++                {
++                    pRenderTarget-&gt;DrawLine(
++                        D2D1::Point2F(0.0f, static_cast&lt;FLOAT&gt;(y)),
++                        D2D1::Point2F(rtSize.width, static_cast&lt;FLOAT&gt;(y)),
++                        pLightSlateGrayBrush,
++                        0.5f
++                        );
++                }
++
++                // draw two rectangles
++                D2D1_RECT_F rectangle1 = D2D1::RectF(
++                     rtSize.width/2 - 50.0f,
++                     rtSize.height/2 - 50.0f,
++                     rtSize.width/2 + 50.0f,
++                     rtSize.height/2 + 50.0f
++                     );
++
++                 D2D1_RECT_F rectangle2 = D2D1::RectF(
++                     rtSize.width/2 - 100.0f,
++                     rtSize.height/2 - 100.0f,
++                     rtSize.width/2 + 100.0f,
++                     rtSize.height/2 + 100.0f
++                     );
++
++                // draw a filled rectangle
++                pRenderTarget-&gt;FillRectangle(&amp;rectangle1, pLightSlateGrayBrush);
++
++                // draw a outline only rectangle
++                pRenderTarget-&gt;DrawRectangle(&amp;rectangle2, pCornflowerBlueBrush);
++
++                               // end GPU draw command building
++                               hr = pRenderTarget-&gt;EndDraw();
++                               if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
++                               {
++                                       DiscardGraphicsResources();
++                               }
++
++                               EndPaint(hWnd, &amp;ps);
++                       }
++           }
++               wasHandled = true;
++        break;</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这部分咋看改动很多，其实和GDI绘制是十分类似的。所不同的是所有绘制指令我们都通过pRenderTarget这个接口调用。pRenderTarget是D2D 
+COM组件所提供给我们的一个接口，那么也就是说实际的GPU绘图指令是在D2D 
+COM组件当中完成的，而我们只是将命令和参数传(外包)给D2D。事实上，我们这些调用只是生成一些D2D消息放在我们窗体的消息队列当中，然后D2D看到这些消息就会进行处理，命令GPU进行绘制。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>+       case WM_SIZE:
++               if (pRenderTarget != nullptr)
++               {
++                       RECT rc;
++                       GetClientRect(hWnd, &amp;rc);
++
++                       D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top);
++
++                       pRenderTarget-&gt;Resize(size);
++               }
++               wasHandled = true;
++        break;</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个是处理窗口尺寸变化的。当窗口尺寸变化的时候，我们需要通知GPU调整画布的大小（实际上会导致抛弃所有之前的绘图资源，重新建立一套新的画布、画笔）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>+    case WM_DISPLAYCHANGE:
++        InvalidateRect(hWnd, nullptr, false);
++        wasHandled = true;
++        break;</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>InvalidateRect是通知系统窗口的客户区域(Client 
+Rect)需要进行重新绘制。而WM_DISPLAYCHANGE是指显示器分辨率发生变化。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>+    if (!wasHandled) { result = DefWindowProc (hWnd, message, wParam, lParam); }
++    return result;</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这部分是捡漏。Windows的消息队列当中的消息很多，包括上面所说的COM相关消息。我们的代码里之进行了一部分消息的定制化处理。对于我们没有处理的消息，在这里调用系统缺省的处理方式进行处理。这个步骤很重要，否则窗口都不会创建成功。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了。我们已经完成了整个代码的更改。接下来是编译它。因为我们用到了COM，所以我们追加需要链接ole32.lib这个库；我们用到了D2D1，所以我们需要追加链接d2d1.lib这个库。我们现在没有用到GDI，所以不需要gdi32.lib这个库了。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>D:\wenli\Source\Repos\GameEngineFromScratch\Platform\Windows&gt;clang -l user32.lib -l ole32.lib -l d2d1.lib -o helloengine_d2d.exe helloengine_d2d.cpp
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>执行helloengine_d2d.exe，我们看到了下面这个结果：</P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic3.zhimg.com/80/v2-02844053762bcf522102b71e18f03256_hd.jpg" 
+width=946 data-rawwidth="946" data-rawheight="533" 
+data-actualsrc="https://pic3.zhimg.com/v2-02844053762bcf522102b71e18f03256_b.jpg" 
+data-size="normal" 
+data-original="https://pic3.zhimg.com/v2-02844053762bcf522102b71e18f03256_r.jpg"></FIGURE>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，我们完成了人生中第一次与GPU的亲密接触。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>保存我们的程序。</P>
+<H2 
+style='FONT-SIZE: 1.2em; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: 600; COLOR: rgb(26,26,26); FONT-STYLE: normal; CLEAR: left; MARGIN: 2.33em 0px 1.16em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; LINE-HEIGHT: 1.5; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px; font-stretch: inherit; font-variant-numeric: inherit'>Windows下面的调试方法</H2>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>现在我们的程序已经变得比较复杂了。因此很可能会有各种bug。解决bug的方式是调试。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>虽然我们使用了Clang工具进行编译，但是我们依旧可以使用Visual 
+Studio进行调试。方法如下：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先，我们需要将编译分为两个步骤，先使用clang进行obj的生成（也就是编译）。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>D:\wenli\Source\Repos\GameEngineFromScratch\Platform\Windows&gt;clang-cl -c -Z7 -o helloengine_d2d.obj helloengine_d2d.cpp</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>注意我们这里实际上使用的是clang-cl这个工具。这个工具是clang的一个兼容性版本，可以识别Visual 
+Studio提供的cl.exe编译器的选项</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//llvm.org/devmtg/2014-04/PDFs/Talks/clang-cl.pdf" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043"><SPAN 
+class=invisible 
+style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">http://</SPAN><SPAN 
+class=visible>llvm.org/devmtg/2014-04</SPAN><SPAN class=invisible 
+style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">/PDFs/Talks/clang-cl.pdf</SPAN><SPAN 
+class=ellipsis></SPAN></A></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们使用Visual 
+Studo的链接器进行链接</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>D:\wenli\Source\Repos\GameEngineFromScratch\Platform\Windows&gt;link -debug user32.lib ole32.lib d2d1.lib helloengine_d2d.obj</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这样我们就可以看到目录当中生成了.pdb文件。这个文件就是Visual 
+Studio的调试符号库。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们可以使用下面的命令启动Visual 
+Studio的调试窗口：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>D:\wenli\Source\Repos\GameEngineFromScratch\Platform\Windows&gt;devenv /debug helloengine_d2d.exe</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来就和常规的Visual 
+Studio调试没有任何区别了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>（-- 
+EOF --）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>参考引用：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//msdn.microsoft.com/en-us/library/windows/desktop/dd370990%28v%3Dvs.85%29.aspx" 
+  rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">Direct2D 
+  (Windows)</A></LI></OL>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px' 
+data-size="normal"><IMG class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.jpg" 
+width=88 data-rawwidth="88" data-rawheight="31" 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.jpg" 
+data-size="normal"></FIGURE>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P></body>
+</html>

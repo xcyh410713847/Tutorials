@@ -1,0 +1,736 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（十二）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/28756646" target=_blank >原文链接 </A></EM></P>
+<P><EM>(未修改原文）</EM></P>
+<P><EM>正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>上一篇我们在Windows环境下面用D3D绘制了一个在三维空间当中的三角形。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本篇我们在Linux环境当中用OpenGL来绘制一个在三维空间当中的矩形。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本文所用的代码存储在GitHub：article_12这个分支当中。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//github.com/netwarm007/GameEngineFromScratch/tree/article_12" 
+rel="nofollow noreferrer" target=_blank 
+data-za-detail-view-id="1043">netwarm007/GameEngineFromScratch</A></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>与之前一样，为了便于之后比较差异，考虑图形模块的具体设计，我们尽量留用前面的代码。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先进入Platform/Linux目录，复制helloengine_xcb.c到helloengine_opengl.cpp。然后作如下变更：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-diff style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'> #include &lt;stdlib.h&gt;
+ #include &lt;string.h&gt;
+ 
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;X11/Xlib.h&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;X11/Xlib-xcb.h&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN> #include &lt;xcb/xcb.h&gt;
+ 
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;GL/gl.h&gt; 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;GL/glx.h&gt; 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;GL/glu.h&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#define GLX_CONTEXT_MAJOR_VERSION_ARB       0x2091
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#define GLX_CONTEXT_MINOR_VERSION_ARB       0x2092
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+// Helper to check for extension string presence.  Adapted from:
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+//   http://www.opengl.org/resources/features/OGLextensions/
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+static bool isExtensionSupported(const char *extList, const char *extension)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+{
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  const char *start;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  const char *where, *terminator;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  /* Extension names should not have spaces. */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  where = strchr(extension, ' ');
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  if (where || *extension == '\0')
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    return false;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  /* It takes a bit of care to be fool-proof about parsing the
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+     OpenGL extensions string. Don't be fooled by sub-strings,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+     etc. */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  for (start=extList;;) {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    where = strstr(start, extension);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if (!where)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      break;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    terminator = where + strlen(extension);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if ( where == start || *(where - 1) == ' ' )
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      if ( *terminator == ' ' || *terminator == '\0' )
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        return true;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    start = terminator;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+  return false;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+}
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+static bool ctxErrorOccurred = false;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+static int ctxErrorHandler(Display *dpy, XErrorEvent *ev)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+{
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    ctxErrorOccurred = true;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    return 0;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+}
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+void DrawAQuad() {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glClearColor(1.0, 1.0, 1.0, 1.0); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glMatrixMode(GL_PROJECTION); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glLoadIdentity(); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glOrtho(-1., 1., -1., 1., 1., 20.); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glMatrixMode(GL_MODELVIEW); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glLoadIdentity(); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glBegin(GL_QUADS); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glColor3f(1., 0., 0.); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glVertex3f(-.75, -.75, 0.); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glColor3f(0., 1., 0.); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glVertex3f( .75, -.75, 0.); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glColor3f(0., 0., 1.); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glVertex3f( .75, .75, 0.); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glColor3f(1., 1., 0.); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glVertex3f(-.75, .75, 0.); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glEnd(); 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+} 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN> int main(void) {
+     xcb_connection_t    *pConn;
+     xcb_screen_t        *pScreen;
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -11,41 +85,145 @@ int main(void) {
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN>     xcb_gcontext_t      foreground;
+     xcb_gcontext_t      background;
+     xcb_generic_event_t *pEvent;
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    xcb_colormap_t colormap;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>     uint32_t        mask = 0;
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       uint32_t                values[2];
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    uint32_t        values[3];
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>     uint8_t         isQuit = 0;
+ 
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       char title[] = "Hello, Engine!";
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    char title[] = "Hello, Engine![OpenGL]";
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>     char title_icon[] = "Hello, Engine! (iconified)";
+ 
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    Display *display;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    int default_screen;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    GLXContext context;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    GLXFBConfig *fb_configs;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    GLXFBConfig fb_config;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    int num_fb_configs = 0;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    XVisualInfo *vi;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    GLXDrawable drawable;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    GLXWindow glxwindow;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glXCreateContextAttribsARBProc glXCreateContextAttribsARB;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    const char *glxExts;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // Get a matching FB config
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    static int visual_attribs[] =
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_X_RENDERABLE    , True,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_RENDER_TYPE     , GLX_RGBA_BIT,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_RED_SIZE        , 8,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_GREEN_SIZE      , 8,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_BLUE_SIZE       , 8,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_ALPHA_SIZE      , 8,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_DEPTH_SIZE      , 24,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_STENCIL_SIZE    , 8,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      GLX_DOUBLEBUFFER    , True,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      //GLX_SAMPLE_BUFFERS  , 1,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      //GLX_SAMPLES         , 4,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      None
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    };
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    int glx_major, glx_minor;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Open Xlib Display */ 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    display = XOpenDisplay(NULL);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if(!display)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        fprintf(stderr, "Can't open display\n");
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        return -1;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // FBConfigs were added in GLX version 1.3.
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if (!glXQueryVersion(display, &amp;glx_major, &amp;glx_minor) || 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+       ((glx_major == 1) &amp;&amp; (glx_minor &lt; 3)) || (glx_major &lt; 1))
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        fprintf(stderr, "Invalid GLX version\n");
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        return -1;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    default_screen = DefaultScreen(display);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Query framebuffer configurations */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    fb_configs = glXChooseFBConfig(display, default_screen, visual_attribs, &amp;num_fb_configs);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if(!fb_configs || num_fb_configs == 0)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        fprintf(stderr, "glXGetFBConfigs failed\n");
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        return -1;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Pick the FB config/visual with the most samples per pixel */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        int best_fbc = -1, worst_fbc = -1, best_num_samp = -1, worst_num_samp = 999;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        for (int i=0; i&lt;num_fb_configs; ++i)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            XVisualInfo *vi = glXGetVisualFromFBConfig(display, fb_configs[i]);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            if (vi)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                int samp_buf, samples;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                glXGetFBConfigAttrib(display, fb_configs[i], GLX_SAMPLE_BUFFERS, &amp;samp_buf);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                glXGetFBConfigAttrib(display, fb_configs[i], GLX_SAMPLES, &amp;samples);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+      
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                printf( "  Matching fbconfig %d, visual ID 0x%lx: SAMPLE_BUFFERS = %d,"
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                        " SAMPLES = %d\n", 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                        i, vi -&gt; visualid, samp_buf, samples);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                if (best_fbc &lt; 0 || (samp_buf &amp;&amp; samples &gt; best_num_samp))
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                    best_fbc = i, best_num_samp = samples;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                if (worst_fbc &lt; 0 || !samp_buf || samples &lt; worst_num_samp)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                    worst_fbc = i, worst_num_samp = samples;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            XFree( vi );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        fb_config = fb_configs[best_fbc];
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Get a visual */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    vi = glXGetVisualFromFBConfig(display, fb_config);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    printf("Chosen visual ID = 0x%lx\n", vi-&gt;visualid);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>     /* establish connection to X server */
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       pConn = xcb_connect(0, 0);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    pConn = XGetXCBConnection(display);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if(!pConn)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        XCloseDisplay(display);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        fprintf(stderr, "Can't get xcb connection from display\n");
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        return -1;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN> 
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       /* get the first screen */
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       pScreen = xcb_setup_roots_iterator(xcb_get_setup(pConn)).data;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Acquire event queue ownership */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    XSetEventQueueOwner(display, XCBOwnsEventQueue);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Find XCB screen */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    xcb_screen_iterator_t screen_iter = 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        xcb_setup_roots_iterator(xcb_get_setup(pConn));
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    for(int screen_num = vi-&gt;screen;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        screen_iter.rem &amp;&amp; screen_num &gt; 0;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        --screen_num, xcb_screen_next(&amp;screen_iter));
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    pScreen = screen_iter.data;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN> 
+     /* get the root window */
+     window = pScreen-&gt;root;
+ 
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       /* create black (foreground) graphic context */
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       foreground = xcb_generate_id(pConn);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       mask = XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       values[0] = pScreen-&gt;black_pixel;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       values[1] = 0;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       xcb_create_gc(pConn, foreground, window, mask, values);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Create XID's for colormap */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    colormap = xcb_generate_id(pConn);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN> 
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       /* create which (background) graphic context */
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       background = xcb_generate_id(pConn);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       mask = XCB_GC_BACKGROUND | XCB_GC_GRAPHICS_EXPOSURES;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       values[0] = pScreen-&gt;white_pixel;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       values[1] = 0;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       xcb_create_gc(pConn, background, window, mask, values);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    xcb_create_colormap(
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        pConn,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        XCB_COLORMAP_ALLOC_NONE,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        colormap,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        window,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        vi-&gt;visualid 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN> 
+     /* create window */
+     window = xcb_generate_id(pConn);
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       values[0] = pScreen-&gt;white_pixel;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       values[1] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    mask = XCB_CW_EVENT_MASK  | XCB_CW_COLORMAP;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    values[0] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    values[1] = colormap;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    values[2] = 0;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>     xcb_create_window (pConn,                   /* connection */
+                        XCB_COPY_FROM_PARENT,    /* depth */
+                        window,                  /* window ID */
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -54,9 +232,11 @@ int main(void) {
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN>                        640, 480,                /* width, height */
+                        10,                      /* boarder width */
+                        XCB_WINDOW_CLASS_INPUT_OUTPUT, /* class */
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                                          pScreen-&gt;root_visual,        /* visual */
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                       vi-&gt;visualid,            /* visual */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>                        mask, values);           /* masks */
+ 
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    XFree(vi);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>     /* set the title of the window */
+     xcb_change_property(pConn, XCB_PROP_MODE_REPLACE, window,
+                 XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8,
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -72,13 +252,120 @@ int main(void) {
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN> 
+     xcb_flush(pConn);
+ 
+
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Get the default screen's GLX extension list */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glxExts = glXQueryExtensionsString(display, default_screen);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* NOTE: It is not necessary to create or make current to a context before
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+       calling glXGetProcAddressARB */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+           glXGetProcAddressARB( (const GLubyte *) "glXCreateContextAttribsARB" );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Create OpenGL context */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    ctxErrorOccurred = false;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    int (*oldHandler)(Display*, XErrorEvent*) =
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        XSetErrorHandler(&amp;ctxErrorHandler);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if (!isExtensionSupported(glxExts, "GLX_ARB_create_context") ||
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+       !glXCreateContextAttribsARB )
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        printf( "glXCreateContextAttribsARB() not found"
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            " ... using old-style GLX context\n" );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        context = glXCreateNewContext(display, fb_config, GLX_RGBA_TYPE, 0, True);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        if(!context)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            fprintf(stderr, "glXCreateNewContext failed\n");
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            return -1;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    else
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        int context_attribs[] =
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+          {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            None
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+          };
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        printf( "Creating context\n" );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        context = glXCreateContextAttribsARB(display, fb_config, 0,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                          True, context_attribs );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        XSync(display, False);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        if (!ctxErrorOccurred &amp;&amp; context)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+          printf( "Created GL 3.0 context\n" );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        else
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+          /* GLX_CONTEXT_MAJOR_VERSION_ARB = 1 */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+          context_attribs[1] = 1;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+          /* GLX_CONTEXT_MINOR_VERSION_ARB = 0 */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+          context_attribs[3] = 0;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+          ctxErrorOccurred = false;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+          printf( "Failed to create GL 3.0 context"
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                  " ... using old-style GLX context\n" );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+          context = glXCreateContextAttribsARB(display, fb_config, 0, 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                            True, context_attribs );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    XSync(display, False);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    XSetErrorHandler(oldHandler);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if (ctxErrorOccurred || !context)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        printf( "Failed to create an OpenGL context\n" );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        return -1;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Verifying that context is a direct context */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if (!glXIsDirect (display, context))
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        printf( "Indirect GLX rendering context obtained\n" );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    else
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        printf( "Direct GLX rendering context obtained\n" );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Create GLX Window */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    glxwindow = 
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            glXCreateWindow(
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                display,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                fb_config,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                window,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                0
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if(!window)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        xcb_destroy_window(pConn, window);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        glXDestroyContext(display, context);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        fprintf(stderr, "glXDestroyContext failed\n");
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        return -1;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    drawable = glxwindow;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* make OpenGL context current */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if(!glXMakeContextCurrent(display, drawable, drawable, context))
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        xcb_destroy_window(pConn, window);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        glXDestroyContext(display, context);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        fprintf(stderr, "glXMakeContextCurrent failed\n");
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        return -1;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-       while((pEvent = xcb_wait_for_event(pConn)) &amp;&amp; !isQuit) {
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    while(!isQuit &amp;&amp; (pEvent = xcb_wait_for_event(pConn))) {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>         switch(pEvent-&gt;response_type &amp; ~0x80) {
+         case XCB_EXPOSE:
+             {       
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       xcb_rectangle_t rect = { 20, 20, 60, 80 };
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       xcb_poly_fill_rectangle(pConn, window, foreground, 1, &amp;rect);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       xcb_flush(pConn);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                DrawAQuad();
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                glXSwapBuffers(display, drawable);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>             }
+             break;
+         case XCB_KEY_PRESS:
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -88,6 +375,8 @@ int main(void) {
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN>         free(pEvent);
+     }
+ 
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    /* Cleanup */
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>     xcb_disconnect(pConn);
+ 
+     return 0;
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>几个要点：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先，在X（当前版本：11）环境当中，就如我们之前所说的，它是被设计为C-S架构，而显卡是被XServer所隐蔽的，所以如果遵从这个架构，我们是不能直接访问显卡，而需要通过一个被称为GLX的X扩展库，将3D绘图指令以X协议扩展的方式发给X 
+Server，然后X Server再发送给显卡。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>但是这样的架构对于软实时系统的游戏来说，其实是过于复杂。所以在2008年开始，X导入了DRI架构，也就是对于本地渲染的情况，可以将OpenGL指令直接发给显卡驱动，而不需要经过X。后来又出现了DRI2等。具体细节请参考下面的链接。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/GLX" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">GLX - 
+Wikipedia</A></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>但是，GLX这个库在书写的时候还没有XCB，所以它是牢牢绑定Xlib的。而XCB和Xlib是一种替代关系。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>所以，在基于XCB的GLX出来之前，我们不得不同时使用XCB和Xlib。用XCB来创建和管理基本的X窗口，而用Xlib 
++ GLX来创建OpenGL相关的图形资源。这就是我们在代码里加了很多头文件的原因。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在代码当中，我们首先给出了我们想要的FrameBuffer（就是用来保存渲染结果并最终生成显示图像的内存上的一片区域）的格式：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// Get a matching FB config
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">static</SPAN> <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>visual_attribs</SPAN><SPAN class=p>[]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN>
+    <SPAN class=p>{</SPAN>
+      <SPAN class=n>GLX_X_RENDERABLE</SPAN>    <SPAN class=p>,</SPAN> <SPAN class=n>True</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=n>GLX_DRAWABLE_TYPE</SPAN>   <SPAN class=p>,</SPAN> <SPAN class=n>GLX_WINDOW_BIT</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=n>GLX_RENDER_TYPE</SPAN>     <SPAN class=p>,</SPAN> <SPAN class=n>GLX_RGBA_BIT</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=n>GLX_X_VISUAL_TYPE</SPAN>   <SPAN class=p>,</SPAN> <SPAN class=n>GLX_TRUE_COLOR</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=n>GLX_RED_SIZE</SPAN>        <SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=n>GLX_GREEN_SIZE</SPAN>      <SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=n>GLX_BLUE_SIZE</SPAN>       <SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=n>GLX_ALPHA_SIZE</SPAN>      <SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=n>GLX_DEPTH_SIZE</SPAN>      <SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">24</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=n>GLX_STENCIL_SIZE</SPAN>    <SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">8</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=n>GLX_DOUBLEBUFFER</SPAN>    <SPAN class=p>,</SPAN> <SPAN class=n>True</SPAN><SPAN class=p>,</SPAN>
+      <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">//GLX_SAMPLE_BUFFERS  , 1,
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>      <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">//GLX_SAMPLES         , 4,
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>      <SPAN class=n>None</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来的代码是罗列出缺省显示器所支持的符合上述条件的所有FrameBuffer格式，然后选择一个最好的（采样数最多的）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>    <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* Query framebuffer configurations */</SPAN>
+    <SPAN class=n>fb_configs</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>glXChooseFBConfig</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>default_screen</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>visual_attribs</SPAN><SPAN class=p>,</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>num_fb_configs</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>fb_configs</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">||</SPAN> <SPAN class=n>num_fb_configs</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">==</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>)</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=n>fprintf</SPAN><SPAN class=p>(</SPAN><SPAN class=n>stderr</SPAN><SPAN class=p>,</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"glXGetFBConfigs failed</SPAN><SPAN class=se style="COLOR: rgb(241,64,60)">\n</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>}</SPAN>
+
+    <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* Pick the FB config/visual with the most samples per pixel */</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>best_fbc</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>worst_fbc</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>best_num_samp</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>worst_num_samp</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">999</SPAN><SPAN class=p>;</SPAN>
+
+        <SPAN class=k style="FONT-WEIGHT: 600">for</SPAN> <SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>i</SPAN><SPAN class=o style="FONT-WEIGHT: 600">=</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN> <SPAN class=n>i</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN><SPAN class=n>num_fb_configs</SPAN><SPAN class=p>;</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">++</SPAN><SPAN class=n>i</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=p>{</SPAN>
+            <SPAN class=n>XVisualInfo</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>vi</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>glXGetVisualFromFBConfig</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>fb_configs</SPAN><SPAN class=p>[</SPAN><SPAN class=n>i</SPAN><SPAN class=p>]);</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>vi</SPAN><SPAN class=p>)</SPAN>
+            <SPAN class=p>{</SPAN>
+                <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>samp_buf</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>samples</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=n>glXGetFBConfigAttrib</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>fb_configs</SPAN><SPAN class=p>[</SPAN><SPAN class=n>i</SPAN><SPAN class=p>],</SPAN> <SPAN class=n>GLX_SAMPLE_BUFFERS</SPAN><SPAN class=p>,</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>samp_buf</SPAN><SPAN class=p>);</SPAN>
+                <SPAN class=n>glXGetFBConfigAttrib</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>fb_configs</SPAN><SPAN class=p>[</SPAN><SPAN class=n>i</SPAN><SPAN class=p>],</SPAN> <SPAN class=n>GLX_SAMPLES</SPAN><SPAN class=p>,</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>samples</SPAN><SPAN class=p>);</SPAN>
+
+                <SPAN class=n>printf</SPAN><SPAN class=p>(</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"  Matching fbconfig %d, visual ID 0x%lx: SAMPLE_BUFFERS = %d,"</SPAN>
+                        <SPAN class=s style="COLOR: rgb(241,64,60)">" SAMPLES = %d</SPAN><SPAN class=se style="COLOR: rgb(241,64,60)">\n</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"</SPAN><SPAN class=p>,</SPAN>
+                        <SPAN class=n>i</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>vi</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN> <SPAN class=n>visualid</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>samp_buf</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>samples</SPAN><SPAN class=p>);</SPAN>
+
+                <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>best_fbc</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">||</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>samp_buf</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&amp;&amp;</SPAN> <SPAN class=n>samples</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=n>best_num_samp</SPAN><SPAN class=p>))</SPAN>
+                    <SPAN class=n>best_fbc</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>i</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>best_num_samp</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>samples</SPAN><SPAN class=p>;</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>worst_fbc</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">||</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>samp_buf</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">||</SPAN> <SPAN class=n>samples</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&lt;</SPAN> <SPAN class=n>worst_num_samp</SPAN><SPAN class=p>)</SPAN>
+                    <SPAN class=n>worst_fbc</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>i</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>worst_num_samp</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>samples</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=p>}</SPAN>
+            <SPAN class=n>XFree</SPAN><SPAN class=p>(</SPAN> <SPAN class=n>vi</SPAN> <SPAN class=p>);</SPAN>
+        <SPAN class=p>}</SPAN>
+
+        <SPAN class=n>fb_config</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>fb_configs</SPAN><SPAN class=p>[</SPAN><SPAN class=n>best_fbc</SPAN><SPAN class=p>];</SPAN>
+    <SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因为上面都是通过Xlib进行的操作，但是我们要使用XCB来创建窗口并管理窗口，所以接下来做了一个同步，让XCB和Xlib都指向同一块屏幕（FrameBuffer）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>    <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* establish connection to X server */</SPAN>
+    <SPAN class=n>pConn</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>XGetXCBConnection</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>)</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=n>XCloseDisplay</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=n>fprintf</SPAN><SPAN class=p>(</SPAN><SPAN class=n>stderr</SPAN><SPAN class=p>,</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"Can't get xcb connection from display</SPAN><SPAN class=se style="COLOR: rgb(241,64,60)">\n</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>}</SPAN>
+
+    <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* Acquire event queue ownership */</SPAN>
+    <SPAN class=n>XSetEventQueueOwner</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>XCBOwnsEventQueue</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* Find XCB screen */</SPAN>
+    <SPAN class=n>xcb_screen_iterator_t</SPAN> <SPAN class=n>screen_iter</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN>
+        <SPAN class=n>xcb_setup_roots_iterator</SPAN><SPAN class=p>(</SPAN><SPAN class=n>xcb_get_setup</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>));</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">for</SPAN><SPAN class=p>(</SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>screen_num</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>vi</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-&gt;</SPAN><SPAN class=n>screen</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>screen_iter</SPAN><SPAN class=p>.</SPAN><SPAN class=n>rem</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&amp;&amp;</SPAN> <SPAN class=n>screen_num</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&gt;</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=o style="FONT-WEIGHT: 600">--</SPAN><SPAN class=n>screen_num</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>xcb_screen_next</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>screen_iter</SPAN><SPAN class=p>));</SPAN>
+    <SPAN class=n>pScreen</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>screen_iter</SPAN><SPAN class=p>.</SPAN><SPAN class=n>data</SPAN><SPAN class=p>;</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们通过XCB创建窗体，这里和（九）是基本完全一样的。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>再通过Xlib+GLX来创建这个窗体当中的OpenGL绘图上下文(Context)。这里取代的是（九）当中的foreground和background。这里的代码看起来稍微有些复杂，因为在OpenGL 
+3.0之前（不含）的版本与之后的版本的创建方法是不一样的。当然我们可以按照低版本创建，但是版本越低，能够使用的OpenGL功能就越少。所以我们的代码进行了一些版本的探查，并根据探查结果选择最好的创建方式：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>    <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* Get the default screen's GLX extension list */</SPAN>
+    <SPAN class=n>glxExts</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>glXQueryExtensionsString</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>default_screen</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* NOTE: It is not necessary to create or make current to a context before
+</SPAN><SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">       calling glXGetProcAddressARB */</SPAN>
+    <SPAN class=n>glXCreateContextAttribsARB</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>glXCreateContextAttribsARBProc</SPAN><SPAN class=p>)</SPAN>
+           <SPAN class=n>glXGetProcAddressARB</SPAN><SPAN class=p>(</SPAN> <SPAN class=p>(</SPAN><SPAN class=k style="FONT-WEIGHT: 600">const</SPAN> <SPAN class=n>GLubyte</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=p>)</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"glXCreateContextAttribsARB"</SPAN> <SPAN class=p>);</SPAN>
+
+    <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* Create OpenGL context */</SPAN>
+    <SPAN class=n>ctxErrorOccurred</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">false</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=n>oldHandler</SPAN><SPAN class=p>)(</SPAN><SPAN class=n>Display</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>XErrorEvent</SPAN><SPAN class=o style="FONT-WEIGHT: 600">*</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN>
+        <SPAN class=n>XSetErrorHandler</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>ctxErrorHandler</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>isExtensionSupported</SPAN><SPAN class=p>(</SPAN><SPAN class=n>glxExts</SPAN><SPAN class=p>,</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"GLX_ARB_create_context"</SPAN><SPAN class=p>)</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">||</SPAN>
+       <SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>glXCreateContextAttribsARB</SPAN> <SPAN class=p>)</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=n>printf</SPAN><SPAN class=p>(</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"glXCreateContextAttribsARB() not found"</SPAN>
+            <SPAN class=s style="COLOR: rgb(241,64,60)">" ... using old-style GLX context</SPAN><SPAN class=se style="COLOR: rgb(241,64,60)">\n</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"</SPAN> <SPAN class=p>);</SPAN>
+        <SPAN class=n>context</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>glXCreateNewContext</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>fb_config</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>GLX_RGBA_TYPE</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>True</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>context</SPAN><SPAN class=p>)</SPAN>
+        <SPAN class=p>{</SPAN>
+            <SPAN class=n>fprintf</SPAN><SPAN class=p>(</SPAN><SPAN class=n>stderr</SPAN><SPAN class=p>,</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"glXCreateNewContext failed</SPAN><SPAN class=se style="COLOR: rgb(241,64,60)">\n</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"</SPAN><SPAN class=p>);</SPAN>
+            <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=p>}</SPAN>
+    <SPAN class=p>}</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">else</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>context_attribs</SPAN><SPAN class=p>[]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN>
+          <SPAN class=p>{</SPAN>
+            <SPAN class=n>GLX_CONTEXT_MAJOR_VERSION_ARB</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">3</SPAN><SPAN class=p>,</SPAN>
+            <SPAN class=n>GLX_CONTEXT_MINOR_VERSION_ARB</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN>
+            <SPAN class=n>None</SPAN>
+          <SPAN class=p>};</SPAN>
+
+        <SPAN class=n>printf</SPAN><SPAN class=p>(</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"Creating context</SPAN><SPAN class=se style="COLOR: rgb(241,64,60)">\n</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"</SPAN> <SPAN class=p>);</SPAN>
+        <SPAN class=n>context</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>glXCreateContextAttribsARB</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>fb_config</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN>
+                                          <SPAN class=n>True</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>context_attribs</SPAN> <SPAN class=p>);</SPAN>
+
+        <SPAN class=n>XSync</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>False</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>ctxErrorOccurred</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">&amp;&amp;</SPAN> <SPAN class=n>context</SPAN><SPAN class=p>)</SPAN>
+          <SPAN class=n>printf</SPAN><SPAN class=p>(</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"Created GL 3.0 context</SPAN><SPAN class=se style="COLOR: rgb(241,64,60)">\n</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"</SPAN> <SPAN class=p>);</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">else</SPAN>
+        <SPAN class=p>{</SPAN>
+          <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* GLX_CONTEXT_MAJOR_VERSION_ARB = 1 */</SPAN>
+          <SPAN class=n>context_attribs</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>;</SPAN>
+          <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* GLX_CONTEXT_MINOR_VERSION_ARB = 0 */</SPAN>
+          <SPAN class=n>context_attribs</SPAN><SPAN class=p>[</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">3</SPAN><SPAN class=p>]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+
+          <SPAN class=n>ctxErrorOccurred</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">false</SPAN><SPAN class=p>;</SPAN>
+
+          <SPAN class=n>printf</SPAN><SPAN class=p>(</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"Failed to create GL 3.0 context"</SPAN>
+                  <SPAN class=s style="COLOR: rgb(241,64,60)">" ... using old-style GLX context</SPAN><SPAN class=se style="COLOR: rgb(241,64,60)">\n</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"</SPAN> <SPAN class=p>);</SPAN>
+          <SPAN class=n>context</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>glXCreateContextAttribsARB</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>fb_config</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN>
+                                            <SPAN class=n>True</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>context_attribs</SPAN> <SPAN class=p>);</SPAN>
+        <SPAN class=p>}</SPAN>
+    <SPAN class=p>}</SPAN>
+
+    <SPAN class=n>XSync</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>False</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=n>XSetErrorHandler</SPAN><SPAN class=p>(</SPAN><SPAN class=n>oldHandler</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>ctxErrorOccurred</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">||</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>context</SPAN><SPAN class=p>)</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=n>printf</SPAN><SPAN class=p>(</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"Failed to create an OpenGL context</SPAN><SPAN class=se style="COLOR: rgb(241,64,60)">\n</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"</SPAN> <SPAN class=p>);</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后为了让GLX能够使用我们通过XCB创建出来的窗口，我们对窗口进行了一次转换，让它也绑定到GLX的对象当中：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>    /* Create GLX Window */
+    glxwindow =
+            glXCreateWindow(
+                display,
+                fb_config,
+                window,
+                0
+                );
+
+    if(!window)
+    {
+        xcb_destroy_window(pConn, window);
+        glXDestroyContext(display, context);
+
+        fprintf(stderr, "glXDestroyContext failed\n");
+        return -1;
+    }
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>通知OpenGL（显卡）画布的位置：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>    <SPAN class=n>drawable</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>glxwindow</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=cm style="COLOR: rgb(153,153,153); FONT-STYLE: italic">/* make OpenGL context current */</SPAN>
+    <SPAN class=k style="FONT-WEIGHT: 600">if</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">!</SPAN><SPAN class=n>glXMakeContextCurrent</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>drawable</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>drawable</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>context</SPAN><SPAN class=p>))</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=n>xcb_destroy_window</SPAN><SPAN class=p>(</SPAN><SPAN class=n>pConn</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>window</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=n>glXDestroyContext</SPAN><SPAN class=p>(</SPAN><SPAN class=n>display</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>context</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=n>fprintf</SPAN><SPAN class=p>(</SPAN><SPAN class=n>stderr</SPAN><SPAN class=p>,</SPAN> <SPAN class=s style="COLOR: rgb(241,64,60)">"glXMakeContextCurrent failed</SPAN><SPAN class=se style="COLOR: rgb(241,64,60)">\n</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"</SPAN><SPAN class=p>);</SPAN>
+        <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>之后用XCB处理窗体消息队列，并在XCB_EXPOSE消息处理流程当中，使用OpenGL函数完成绘图。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>    while(!isQuit &amp;&amp; (pEvent = xcb_wait_for_event(pConn))) {
+        switch(pEvent-&gt;response_type &amp; ~0x80) {
+        case XCB_EXPOSE:
+            {
+                DrawAQuad();
+                glXSwapBuffers(display, drawable);
+            }
+            break;
+        case XCB_KEY_PRESS:
+            isQuit = 1;
+            break;
+        }
+        free(pEvent);
+    }
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个程序的编译命令行如下：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@localhost Linux<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ clang -lxcb -lX11 -lX11-xcb -lGL -lGLU -o helloengine_opengl helloengine_opengl.cpp
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>需要事先用apt或者yum安装libGL-dev，libGLU-dev, 
+libX11-dev,libX11-xcb-dev,libxcb-dev。注意在不同的发行版本当中包的名字会稍有不同。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>如果需要调试，则需要增加一个“-g”选项。然后使用gdb进行调试。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>运行结果如下：</P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic4.zhimg.com/80/v2-aad6527c8b2add015d5046f0803b426b_hd.png" 
+width=1058 data-rawwidth="1058" data-rawheight="613" 
+data-actualsrc="https://pic4.zhimg.com/v2-aad6527c8b2add015d5046f0803b426b_b.png" 
+data-original="https://pic4.zhimg.com/v2-aad6527c8b2add015d5046f0803b426b_r.jpg"></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>对比前一篇的Direct 
+3D，我们可以看到我们并没有提供任何的Shader程序。实际绘图的指令也仅仅是如下数行，比Direct 
+3D的一连串API调用要简洁明了许多。这就是我们之前提到过的，OpenGL是一种比较高层的封装，它让我们集中在要绘制的内容本身的同时，也隐藏了很多实际的处理。对于CAD、科学仿真等领域来说十分好用，但是对于更为复杂的应用来说，特别是游戏这种需要做深度优化的图形运用来讲，就显得有些封装过头了（当然，我们这里使用的是最简单的固定管道的OpenGL。OpenGL高版本也是支持GPU编程的，这个在后续介绍）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">void</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">DrawAQuad</SPAN><SPAN class=p>()</SPAN> <SPAN class=p>{</SPAN>
+    <SPAN class=n>glClearColor</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">1.0</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.0</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.0</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.0</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glClear</SPAN><SPAN class=p>(</SPAN><SPAN class=n>GL_COLOR_BUFFER_BIT</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">|</SPAN> <SPAN class=n>GL_DEPTH_BUFFER_BIT</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=n>glMatrixMode</SPAN><SPAN class=p>(</SPAN><SPAN class=n>GL_PROJECTION</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glLoadIdentity</SPAN><SPAN class=p>();</SPAN>
+    <SPAN class=n>glOrtho</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>,</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">20.</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=n>glMatrixMode</SPAN><SPAN class=p>(</SPAN><SPAN class=n>GL_MODELVIEW</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glLoadIdentity</SPAN><SPAN class=p>();</SPAN>
+    <SPAN class=n>gluLookAt</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">10.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=n>glBegin</SPAN><SPAN class=p>(</SPAN><SPAN class=n>GL_QUADS</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glColor3f</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glVertex3f</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">.75</SPAN><SPAN class=p>,</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">.75</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glColor3f</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glVertex3f</SPAN><SPAN class=p>(</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">.75</SPAN><SPAN class=p>,</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">.75</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glColor3f</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glVertex3f</SPAN><SPAN class=p>(</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">.75</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">.75</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glColor3f</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glVertex3f</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">.75</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">.75</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>glEnd</SPAN><SPAN class=p>();</SPAN>
+<SPAN class=p>}</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>（-- 
+EOF --)</P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.png" 
+width=88 data-rawwidth="88" data-rawheight="31" 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.png"></FIGURE>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P></body>
+</html>

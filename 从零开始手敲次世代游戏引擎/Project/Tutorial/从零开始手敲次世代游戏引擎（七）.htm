@@ -1,0 +1,267 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（七）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P>
+<EM>
+<A href="https://zhuanlan.zhihu.com/p/28641118" target=_blank >
+原文链接
+
+</A>
+</EM></P>
+<P>
+<EM >
+ (未修改原文）</EM></P>
+<P >
+
+<EM>
+正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>那么首先让我们从最熟悉的Windows开始我们的图形编程支线任务。<BR>想象一下在现实生活当中，如果我们想要画画，需要准备一些什么东西。在计算机领域，这个过程也是很相似的。因为当计算机从CUI（就是文字界面）转向GUI的时候，拓荒GUI的那些先驱们，也是参考着生活进行设计和编程的。<BR>显然，我们首先需要有一块画布。在Windows系统当中，就是需要创建一个窗体。相信看这篇文章的很多人都写过Windows应用，而且是GUI应用。用Visual 
+Studio生成一个windows应用，会自动生成创建这个窗体的代码。甚至，如果使用UWP，那么窗口对我们来说更像一张网页。然而这不是我想要介绍的方法。<BR>我想要介绍的是使用windows系统API，也就是俗称win32 
+API（64位windows的API仍然称为win32 API）的方式创建窗口。之所以这么做，是为了最小限度的依赖Visual 
+Studio以及相关的库，也是为了便于与其它系统的类似API作个比较。<BR>好了，让我们开始。首先依然是做个记录点：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@iZ625ivhudwZ GameEngineFromScratch<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ git checkout -b article_7
+Switched to a new branch <SPAN class=s1 style="COLOR: rgb(241,64,60)">'article_7'</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后新建一个Platform目录，用于存放和平台相关的代码。</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@iZ625ivhudwZ GameEngineFromScratch<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ mkdir Platform
+<SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@iZ625ivhudwZ GameEngineFromScratch<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ <SPAN class=nb style="COLOR: rgb(0,132,255)">cd</SPAN> Platform</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在Platform下面新建Windows目录，用于存放Windows平台相关代码：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@iZ625ivhudwZ Platform<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ mkdir Windows 
+<SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@iZ625ivhudwZ Platform<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ <SPAN class=nb style="COLOR: rgb(0,132,255)">cd</SPAN> Windows</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>新建helloengine_win.c，敲入如下代码：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-c style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// include the basic windows header file
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;windows.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;windowsx.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">#include</SPAN> <SPAN class=cpf>&lt;tchar.h&gt;</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)">
+</SPAN><SPAN class=cp style="FONT-WEIGHT: 600; COLOR: rgb(153,153,153)"></SPAN>
+<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// the WindowProc function prototype
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN><SPAN class=n>LRESULT</SPAN> <SPAN class=n>CALLBACK</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">WindowProc</SPAN><SPAN class=p>(</SPAN><SPAN class=n>HWND</SPAN> <SPAN class=n>hWnd</SPAN><SPAN class=p>,</SPAN>
+                         <SPAN class=n>UINT</SPAN> <SPAN class=n>message</SPAN><SPAN class=p>,</SPAN>
+                         <SPAN class=n>WPARAM</SPAN> <SPAN class=n>wParam</SPAN><SPAN class=p>,</SPAN>
+                         <SPAN class=n>LPARAM</SPAN> <SPAN class=n>lParam</SPAN><SPAN class=p>);</SPAN>
+
+<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// the entry point for any Windows program
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN><SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>WINAPI</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">WinMain</SPAN><SPAN class=p>(</SPAN><SPAN class=n>HINSTANCE</SPAN> <SPAN class=n>hInstance</SPAN><SPAN class=p>,</SPAN>
+                   <SPAN class=n>HINSTANCE</SPAN> <SPAN class=n>hPrevInstance</SPAN><SPAN class=p>,</SPAN>
+                   <SPAN class=n>LPTSTR</SPAN> <SPAN class=n>lpCmdLine</SPAN><SPAN class=p>,</SPAN>
+                   <SPAN class=kt style="FONT-WEIGHT: 600; COLOR: rgb(23,81,153)">int</SPAN> <SPAN class=n>nCmdShow</SPAN><SPAN class=p>)</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// the handle for the window, filled by a function
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>HWND</SPAN> <SPAN class=n>hWnd</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// this struct holds information for the window class
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>WNDCLASSEX</SPAN> <SPAN class=n>wc</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// clear out the window class for use
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>ZeroMemory</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>wc</SPAN><SPAN class=p>,</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">sizeof</SPAN><SPAN class=p>(</SPAN><SPAN class=n>WNDCLASSEX</SPAN><SPAN class=p>));</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// fill in the struct with the needed information
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>cbSize</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">sizeof</SPAN><SPAN class=p>(</SPAN><SPAN class=n>WNDCLASSEX</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>style</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>CS_HREDRAW</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">|</SPAN> <SPAN class=n>CS_VREDRAW</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>lpfnWndProc</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>WindowProc</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>hInstance</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>hInstance</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>hCursor</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>LoadCursor</SPAN><SPAN class=p>(</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>IDC_ARROW</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>hbrBackground</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>HBRUSH</SPAN><SPAN class=p>)</SPAN><SPAN class=n>COLOR_WINDOW</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=n>wc</SPAN><SPAN class=p>.</SPAN><SPAN class=n>lpszClassName</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>_T</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"WindowClass1"</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// register the window class
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>RegisterClassEx</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>wc</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// create the window and use the result as the handle
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>hWnd</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN> <SPAN class=n>CreateWindowEx</SPAN><SPAN class=p>(</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN>
+                          <SPAN class=n>_T</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"WindowClass1"</SPAN><SPAN class=p>),</SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// name of the window class
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=n>_T</SPAN><SPAN class=p>(</SPAN><SPAN class=s style="COLOR: rgb(241,64,60)">"Hello, Engine!"</SPAN><SPAN class=p>),</SPAN>   <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// title of the window
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=n>WS_OVERLAPPEDWINDOW</SPAN><SPAN class=p>,</SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// window style
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=mi style="COLOR: rgb(0,132,255)">300</SPAN><SPAN class=p>,</SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// x-position of the window
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=mi style="COLOR: rgb(0,132,255)">300</SPAN><SPAN class=p>,</SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// y-position of the window
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=mi style="COLOR: rgb(0,132,255)">500</SPAN><SPAN class=p>,</SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// width of the window
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=mi style="COLOR: rgb(0,132,255)">400</SPAN><SPAN class=p>,</SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// height of the window
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>,</SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// we have no parent window, NULL
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>,</SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// we aren't using menus, NULL
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=n>hInstance</SPAN><SPAN class=p>,</SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// application handle
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                          <SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>);</SPAN>    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// used with multiple windows, NULL
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// display the window on the screen
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>ShowWindow</SPAN><SPAN class=p>(</SPAN><SPAN class=n>hWnd</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>nCmdShow</SPAN><SPAN class=p>);</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// enter the main loop:
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// this struct holds Windows event messages
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>MSG</SPAN> <SPAN class=n>msg</SPAN><SPAN class=p>;</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// wait for the next message in the queue, store the result in 'msg'
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">while</SPAN><SPAN class=p>(</SPAN><SPAN class=n>GetMessage</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>msg</SPAN><SPAN class=p>,</SPAN> <SPAN class=nb style="COLOR: rgb(0,132,255)">NULL</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>,</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>))</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// translate keystroke messages into the right format
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=n>TranslateMessage</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>msg</SPAN><SPAN class=p>);</SPAN>
+
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// send the message to the WindowProc function
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=n>DispatchMessage</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">&amp;</SPAN><SPAN class=n>msg</SPAN><SPAN class=p>);</SPAN>
+    <SPAN class=p>}</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// return this part of the WM_QUIT message to Windows
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>msg</SPAN><SPAN class=p>.</SPAN><SPAN class=n>wParam</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>}</SPAN>
+
+<SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// this is the main message handler for the program
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN><SPAN class=n>LRESULT</SPAN> <SPAN class=n>CALLBACK</SPAN> <SPAN class=nf style="FONT-WEIGHT: 600; COLOR: rgb(241,64,60)">WindowProc</SPAN><SPAN class=p>(</SPAN><SPAN class=n>HWND</SPAN> <SPAN class=n>hWnd</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>UINT</SPAN> <SPAN class=n>message</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>WPARAM</SPAN> <SPAN class=n>wParam</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>LPARAM</SPAN> <SPAN class=n>lParam</SPAN><SPAN class=p>)</SPAN>
+<SPAN class=p>{</SPAN>
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// sort through and find what code to run for the message given
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">switch</SPAN><SPAN class=p>(</SPAN><SPAN class=n>message</SPAN><SPAN class=p>)</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// this message is read when the window is closed
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>        <SPAN class=k style="FONT-WEIGHT: 600">case</SPAN> <SPAN class=nl>WM_DESTROY</SPAN><SPAN class=p>:</SPAN>
+            <SPAN class=p>{</SPAN>
+                <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// close the application entirely
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>                <SPAN class=n>PostQuitMessage</SPAN><SPAN class=p>(</SPAN><SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>);</SPAN>
+                <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=mi style="COLOR: rgb(0,132,255)">0</SPAN><SPAN class=p>;</SPAN>
+            <SPAN class=p>}</SPAN> <SPAN class=k style="FONT-WEIGHT: 600">break</SPAN><SPAN class=p>;</SPAN>
+    <SPAN class=p>}</SPAN>
+
+    <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// Handle any messages the switch statement didn't
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=k style="FONT-WEIGHT: 600">return</SPAN> <SPAN class=n>DefWindowProc</SPAN> <SPAN class=p>(</SPAN><SPAN class=n>hWnd</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>message</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>wParam</SPAN><SPAN class=p>,</SPAN> <SPAN class=n>lParam</SPAN><SPAN class=p>);</SPAN>
+<SPAN class=p>}</SPAN>
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了，让我们来用Clang对它进行编译。注意这是一个Windows程序，所以你需要在Windows里面编译它。并且，因为我们用到了一些Windows平台的接口，需要链接相关的库：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-powershell style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=n>C</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">:</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Users</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Tim</SPAN><SPAN class=p>.</SPAN><SPAN class=n>AzureAD</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Source</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Repos</SPAN><SPAN class=p>\</SPAN><SPAN class=n>GameEngineFromScratch</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Platform</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Windows</SPAN><SPAN class=p>&gt;</SPAN><SPAN class=n>clang</SPAN> <SPAN class=n>-l</SPAN> <SPAN class=n>user32</SPAN><SPAN class=p>.</SPAN><SPAN class=n>lib</SPAN> <SPAN class=n>-o</SPAN> <SPAN class=n>helloengine_win</SPAN><SPAN class=p>.</SPAN><SPAN class=n>exe</SPAN> <SPAN class=n>helloengine_win</SPAN><SPAN class=p>.</SPAN><SPAN class=n>c</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>编译成功的话，会出现一个helloengine_win.exe</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-powershell style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=n>C</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">:</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Users</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Tim</SPAN><SPAN class=p>.</SPAN><SPAN class=n>AzureAD</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Source</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Repos</SPAN><SPAN class=p>\</SPAN><SPAN class=n>GameEngineFromScratch</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Platform</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Windows</SPAN><SPAN class=p>&gt;</SPAN><SPAN class=n>dir</SPAN>
+ <SPAN class=n>驱动器</SPAN> <SPAN class=n>C</SPAN> <SPAN class=n>中的卷是</SPAN> <SPAN class=n>OS</SPAN>
+ <SPAN class=n>卷的序列号是</SPAN> <SPAN class=n>38A2-CBDD</SPAN>
+
+ <SPAN class=n>C</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">:</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Users</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Tim</SPAN><SPAN class=p>.</SPAN><SPAN class=n>AzureAD</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Source</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Repos</SPAN><SPAN class=p>\</SPAN><SPAN class=n>GameEngineFromScratch</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Platform</SPAN><SPAN class=p>\</SPAN><SPAN class=n>Windows</SPAN> <SPAN class=n>的目录</SPAN>
+
+<SPAN class=n>2017</SPAN><SPAN class=p>/</SPAN><SPAN class=n>08</SPAN><SPAN class=p>/</SPAN><SPAN class=n>21</SPAN>  <SPAN class=n>08</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">:</SPAN><SPAN class=n>20</SPAN>    <SPAN class=p>&lt;</SPAN><SPAN class=n>DIR</SPAN><SPAN class=p>&gt;</SPAN>          <SPAN class=p>.</SPAN>
+<SPAN class=n>2017</SPAN><SPAN class=p>/</SPAN><SPAN class=n>08</SPAN><SPAN class=p>/</SPAN><SPAN class=n>21</SPAN>  <SPAN class=n>08</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">:</SPAN><SPAN class=n>20</SPAN>    <SPAN class=p>&lt;</SPAN><SPAN class=n>DIR</SPAN><SPAN class=p>&gt;</SPAN>          <SPAN class=p>..</SPAN>
+<SPAN class=n>2017</SPAN><SPAN class=p>/</SPAN><SPAN class=n>08</SPAN><SPAN class=p>/</SPAN><SPAN class=n>21</SPAN>  <SPAN class=n>08</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">:</SPAN><SPAN class=n>10</SPAN>             <SPAN class=n>3</SPAN><SPAN class=p>,</SPAN><SPAN class=n>163</SPAN> <SPAN class=n>helloengine_win</SPAN><SPAN class=p>.</SPAN><SPAN class=n>c</SPAN>
+<SPAN class=n>2017</SPAN><SPAN class=p>/</SPAN><SPAN class=n>08</SPAN><SPAN class=p>/</SPAN><SPAN class=n>21</SPAN>  <SPAN class=n>08</SPAN><SPAN class=err style="COLOR: rgb(241,64,60)">:</SPAN><SPAN class=n>21</SPAN>            <SPAN class=n>73</SPAN><SPAN class=p>,</SPAN><SPAN class=n>216</SPAN> <SPAN class=n>helloengine_win</SPAN><SPAN class=p>.</SPAN><SPAN class=n>exe</SPAN>
+               <SPAN class=n>2</SPAN> <SPAN class=n>个文件</SPAN>         <SPAN class=n>76</SPAN><SPAN class=p>,</SPAN><SPAN class=n>379</SPAN> <SPAN class=n>字节</SPAN>
+               <SPAN class=n>2</SPAN> <SPAN class=n>个目录</SPAN> <SPAN class=n>885</SPAN><SPAN class=p>,</SPAN><SPAN class=n>621</SPAN><SPAN class=p>,</SPAN><SPAN class=n>440</SPAN><SPAN class=p>,</SPAN><SPAN class=n>512</SPAN> <SPAN class=n>可用字节</SPAN></CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>执行它，我们就可以看到我们的窗体啦！</P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic4.zhimg.com/80/v2-ee10a27e15cfc4d9feb95a423ee02683_hd.jpg" 
+width=486  data-rawwidth="486" data-rawheight="393" 
+data-actualsrc="https://pic4.zhimg.com/v2-ee10a27e15cfc4d9feb95a423ee02683_b.jpg" 
+data-original="https://pic4.zhimg.com/v2-ee10a27e15cfc4d9feb95a423ee02683_r.jpg"></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>接下来再玩些别的酷酷的东西。在Linux上面交叉编译它(把代码Commit/Push到Github上面，然后在Linux上面把代码再Pull下来。不会的网上搜一下Github/Git教程。）</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-bash style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@iZ625ivhudwZ GameEngineFromScratch<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ git pull
+remote: Counting objects: <SPAN class=m style="COLOR: rgb(0,132,255)">5</SPAN>, <SPAN class=k style="FONT-WEIGHT: 600">done</SPAN>.
+remote: Compressing objects: <SPAN class=m style="COLOR: rgb(0,132,255)">100</SPAN>% <SPAN class=o style="FONT-WEIGHT: 600">(</SPAN><SPAN class=m style="COLOR: rgb(0,132,255)">2</SPAN>/2<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN>, <SPAN class=k style="FONT-WEIGHT: 600">done</SPAN>.
+remote: Total <SPAN class=m style="COLOR: rgb(0,132,255)">5</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>delta <SPAN class=m style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=o style="FONT-WEIGHT: 600">)</SPAN>, reused <SPAN class=m style="COLOR: rgb(0,132,255)">5</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>delta <SPAN class=m style="COLOR: rgb(0,132,255)">1</SPAN><SPAN class=o style="FONT-WEIGHT: 600">)</SPAN>, pack-reused <SPAN class=m style="COLOR: rgb(0,132,255)">0</SPAN>
+Unpacking objects: <SPAN class=m style="COLOR: rgb(0,132,255)">100</SPAN>% <SPAN class=o style="FONT-WEIGHT: 600">(</SPAN><SPAN class=m style="COLOR: rgb(0,132,255)">5</SPAN>/5<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN>, <SPAN class=k style="FONT-WEIGHT: 600">done</SPAN>.
+From github.com:netwarm007/GameEngineFromScratch
+   264a4aa..5587a7d  article_7  -&gt; origin/article_7
+Updating 264a4aa..5587a7d
+Fast-forward
+ Platform/Windows/<SPAN class=o style="FONT-WEIGHT: 600">{</SPAN>helloworld_win.c <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN>&gt; helloengine_win.c<SPAN class=o style="FONT-WEIGHT: 600">}</SPAN> <SPAN class=p>|</SPAN> <SPAN class=m style="COLOR: rgb(0,132,255)">2</SPAN> +-
+ <SPAN class=m style="COLOR: rgb(0,132,255)">1</SPAN> file changed, <SPAN class=m style="COLOR: rgb(0,132,255)">1</SPAN> insertion<SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>+<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN>, <SPAN class=m style="COLOR: rgb(0,132,255)">1</SPAN> deletion<SPAN class=o style="FONT-WEIGHT: 600">(</SPAN>-<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN>
+ rename Platform/Windows/<SPAN class=o style="FONT-WEIGHT: 600">{</SPAN>helloworld_win.c <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN>&gt; helloengine_win.c<SPAN class=o style="FONT-WEIGHT: 600">}</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">(</SPAN><SPAN class=m style="COLOR: rgb(0,132,255)">97</SPAN>%<SPAN class=o style="FONT-WEIGHT: 600">)</SPAN>
+<SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@iZ625ivhudwZ GameEngineFromScratch<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ <SPAN class=nb style="COLOR: rgb(0,132,255)">cd</SPAN> Platform/Windows/
+<SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@iZ625ivhudwZ Windows<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ ls
+helloengine_win.c
+<SPAN class=o style="FONT-WEIGHT: 600">[</SPAN>tim@iZ625ivhudwZ Windows<SPAN class=o style="FONT-WEIGHT: 600">]</SPAN>$ docker run -it --rm -v <SPAN class=k style="FONT-WEIGHT: 600">$(</SPAN><SPAN class=nb style="COLOR: rgb(0,132,255)">pwd</SPAN><SPAN class=k style="FONT-WEIGHT: 600">)</SPAN>:/usr/src tim03/mingw64
+docker@691b5f941825:/$ <SPAN class=nb style="COLOR: rgb(0,132,255)">cd</SPAN> /usr/src
+docker@691b5f941825:/usr/src$ ls
+helloengine_win.c
+docker@691b5f941825:/usr/src$ x86_64-w64-mingw32-gcc -o helloengine_win.exe helloengine_win.c
+docker@691b5f941825:/usr/src$ ls
+helloengine_win.c  helloengine_win.exe
+docker@691b5f941825:/usr/src$ <SPAN class=nb style="COLOR: rgb(0,132,255)">exit</SPAN>
+<SPAN class=nb style="COLOR: rgb(0,132,255)">exit</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>这个程序，当然，这样直接是没有办法在Linux上执行的，因为它是一个Windows程序。但是，我们可以使用wine来执行它。wine是一个在Linux上面模拟Windows系统接口的执行环境，可以用了执行Windows程序。当时开发wine的主要目的，就是在Linux上面跑只有Windows版本的游戏。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>不过需要注意的是，要执行图形界面程序，我们必须在Linux的桌面环境下（也就是不能在TTY环境下）。切换到桌面环境（不会的请自己在网上搜索Linux基本教程），打开终端仿真窗口，执行下面的命令（如果没有安装wine，请用yum或者apt命令安装）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>tim@iZuf6iup3mphicesefdwajZ:~/src/GameEngineFromScratch/Platform/Windows$ wine helloengine_win.exe
+</CODE></PRE></DIV>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-31c716b4cc133a527b2aefa8bbba7a2d_hd.jpg" 
+width=1026  data-rawwidth="1026" data-rawheight="830" 
+data-actualsrc="https://pic2.zhimg.com/v2-31c716b4cc133a527b2aefa8bbba7a2d_b.jpg" 
+data-original="https://pic2.zhimg.com/v2-31c716b4cc133a527b2aefa8bbba7a2d_r.jpg"></FIGURE>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>（-- 
+EOF --)</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>参考引用：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A class=" external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//www.infernodevelopment.com/c-win32-api-tutorial" 
+  rel="nofollow noreferrer" target=_blank  data-za-detail-view-id="1043"><SPAN 
+  class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">http://www.</SPAN><SPAN 
+  class=visible>infernodevelopment.com/</SPAN><SPAN class=invisible 
+  style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">c-win32-api-tutorial</SPAN><SPAN 
+  class=ellipsis></SPAN></A>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/Windows_API" 
+  rel="nofollow noreferrer" target=_blank  data-za-detail-view-id="1043">Windows 
+  API - Wikipedia</A>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//msdn.microsoft.com/en-us/library/windows/desktop/ff818516%28v%3Dvs.85%29.aspx" 
+  rel="nofollow noreferrer" target=_blank  data-za-detail-view-id="1043">Windows 
+  API Index</A></LI></OL>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.jpg" 
+width=88  data-rawwidth="88" data-rawheight="31" 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.jpg"></FIGURE>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank  data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P>
+<P> 
+ <EM>             </EM>&nbsp;</P></body>
+</html>

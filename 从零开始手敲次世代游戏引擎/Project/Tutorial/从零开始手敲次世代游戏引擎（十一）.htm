@@ -1,0 +1,694 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>从零开始手敲次世代游戏引擎（十一）</title>
+<meta name="GENERATOR" content="WinCHM">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+html,body { 
+	/* Default Font */
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+}
+</style>
+
+</head>
+
+<body>
+<P><EM><A href="https://zhuanlan.zhihu.com/p/28719057" target=_blank >原文链接 </A></EM></P>
+<P><EM>(未修改原文）</EM></P>
+<P><EM>正文开始：</EM></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 0px 0px 1.4em; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>上一篇我们用Direct 
+2D绘制了一个平面图形。接下来我们用Direct 3D绘制一个3D图形。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>首先我们还是通过复制的方法重用我们的代码。拷贝helloengine_d2d.cpp到helloengine_d3d.cpp。然后作如下修改（本文使用的是D3D 
+11接口，因为直接上D3D 12的话学习难度坡度太大）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-diff style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -2,13 +2,39 @@
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN> #include &lt;windows.h&gt;
+ #include &lt;windowsx.h&gt;
+ #include &lt;tchar.h&gt;
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;stdint.h&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-#include &lt;d2d1.h&gt;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;d3d11.h&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;d3d11_1.h&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;d3dcompiler.h&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;DirectXMath.h&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;DirectXPackedVector.h&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+#include &lt;DirectXColors.h&gt;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-ID2D1Factory                   *pFactory = nullptr;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-ID2D1HwndRenderTarget  *pRenderTarget = nullptr;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-ID2D1SolidColorBrush   *pLightSlateGrayBrush = nullptr;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-ID2D1SolidColorBrush   *pCornflowerBlueBrush = nullptr;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+using namespace DirectX;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+using namespace DirectX::PackedVector;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+const uint32_t SCREEN_WIDTH  =  960;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+const uint32_t SCREEN_HEIGHT =  480;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+// global declarations
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+IDXGISwapChain          *g_pSwapchain = nullptr;              // the pointer to the swap chain interface
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+ID3D11Device            *g_pDev       = nullptr;              // the pointer to our Direct3D device interface
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+ID3D11DeviceContext     *g_pDevcon    = nullptr;              // the pointer to our Direct3D device context
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+ID3D11RenderTargetView  *g_pRTView    = nullptr;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+ID3D11InputLayout       *g_pLayout    = nullptr;              // the pointer to the input layout
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+ID3D11VertexShader      *g_pVS        = nullptr;              // the pointer to the vertex shader
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+ID3D11PixelShader       *g_pPS        = nullptr;              // the pointer to the pixel shader
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+ID3D11Buffer            *g_pVBuffer   = nullptr;              // Vertex Buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+// vertex buffer structure
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+struct VERTEX {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        XMFLOAT3    Position;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        XMFLOAT4    Color;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+};
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+ template&lt;class T&gt;
+ inline void SafeRelease(T **ppInterfaceToRelease)
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -21,32 +47,164 @@ inline void SafeRelease(T **ppInterfaceToRelease)
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN>     }
+ }
+
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+void CreateRenderTarget() {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    HRESULT hr;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    ID3D11Texture2D *pBackBuffer;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // Get a pointer to the back buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pSwapchain-&gt;GetBuffer( 0, __uuidof( ID3D11Texture2D ),
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                 ( LPVOID* )&amp;pBackBuffer );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // Create a render-target view
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDev-&gt;CreateRenderTargetView( pBackBuffer, NULL,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                          &amp;g_pRTView );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    pBackBuffer-&gt;Release();
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // Bind the view
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDevcon-&gt;OMSetRenderTargets( 1, &amp;g_pRTView, NULL );
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+}
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+void SetViewPort() {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    D3D11_VIEWPORT viewport;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    ZeroMemory(&amp;viewport, sizeof(D3D11_VIEWPORT));
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    viewport.TopLeftX = 0;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    viewport.TopLeftY = 0;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    viewport.Width = SCREEN_WIDTH;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    viewport.Height = SCREEN_HEIGHT;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDevcon-&gt;RSSetViewports(1, &amp;viewport);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+}
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+// this is the function that loads and prepares the shaders
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+void InitPipeline() {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // load and compile the two shaders
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    ID3DBlob *VS, *PS;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    D3DReadFileToBlob(L"copy.vso", &amp;VS);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    D3DReadFileToBlob(L"copy.pso", &amp;PS);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // encapsulate both shaders into shader objects
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDev-&gt;CreateVertexShader(VS-&gt;GetBufferPointer(), VS-&gt;GetBufferSize(), NULL, &amp;g_pVS);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDev-&gt;CreatePixelShader(PS-&gt;GetBufferPointer(), PS-&gt;GetBufferSize(), NULL, &amp;g_pPS);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // set the shader objects
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDevcon-&gt;VSSetShader(g_pVS, 0, 0);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDevcon-&gt;PSSetShader(g_pPS, 0, 0);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // create the input layout object
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    D3D11_INPUT_ELEMENT_DESC ied[] =
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>     {
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    };
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDev-&gt;CreateInputLayout(ied, 2, VS-&gt;GetBufferPointer(), VS-&gt;GetBufferSize(), &amp;g_pLayout);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDevcon-&gt;IASetInputLayout(g_pLayout);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    VS-&gt;Release();
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    PS-&gt;Release();
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+}
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+// this is the function that creates the shape to render
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+void InitGraphics() {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // create a triangle using the VERTEX struct
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    VERTEX OurVertices[] =
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        {XMFLOAT3(0.0f, 0.5f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)},
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        {XMFLOAT3(0.45f, -0.5, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)},
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        {XMFLOAT3(-0.45f, -0.5f, 0.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    };
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // create the vertex buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    D3D11_BUFFER_DESC bd;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    ZeroMemory(&amp;bd, sizeof(bd));
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    bd.Usage = D3D11_USAGE_DYNAMIC;                // write access access by CPU and GPU
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    bd.ByteWidth = sizeof(VERTEX) * 3;             // size is the VERTEX struct * 3
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;       // use as a vertex buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;    // allow CPU to write in buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDev-&gt;CreateBuffer(&amp;bd, NULL, &amp;g_pVBuffer);       // create the buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // copy the vertices into the buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    D3D11_MAPPED_SUBRESOURCE ms;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDevcon-&gt;Map(g_pVBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &amp;ms);    // map the buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    memcpy(ms.pData, OurVertices, sizeof(VERTEX) * 3);                       // copy the data
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDevcon-&gt;Unmap(g_pVBuffer, NULL);                                      // unmap the buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+}
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+// this function prepare graphic resources for use
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>HRESULT CreateGraphicsResources(HWND hWnd)
+{
+    HRESULT hr = S_OK;
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-    if (pRenderTarget == nullptr)
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-    {
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        RECT rc;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        GetClientRect(hWnd, &amp;rc);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left,
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        rc.bottom - rc.top);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        hr = pFactory-&gt;CreateHwndRenderTarget(
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-            D2D1::RenderTargetProperties(),
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-            D2D1::HwndRenderTargetProperties(hWnd, size),
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-            &amp;pRenderTarget);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        if (SUCCEEDED(hr))
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        {
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-            hr = pRenderTarget-&gt;CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::LightSlateGray), &amp;pLightSlateGrayBrush);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        }
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN>
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        if (SUCCEEDED(hr))
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        {
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-            hr = pRenderTarget-&gt;CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::CornflowerBlue), &amp;pCornflowerBlueBrush);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    if (g_pSwapchain == nullptr)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        // create a struct to hold information about the swap chain
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        DXGI_SWAP_CHAIN_DESC scd;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        // clear out the struct for use
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        ZeroMemory(&amp;scd, sizeof(DXGI_SWAP_CHAIN_DESC));
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        // fill the swap chain description struct
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.BufferCount = 1;                                    // one back buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.BufferDesc.Width = SCREEN_WIDTH;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.BufferDesc.Height = SCREEN_HEIGHT;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;     // use 32-bit color
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.BufferDesc.RefreshRate.Numerator = 60;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.BufferDesc.RefreshRate.Denominator = 1;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;      // how swap chain is to be used
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.OutputWindow = hWnd;                                // the window to be used
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.SampleDesc.Count = 4;                               // how many multisamples
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.Windowed = TRUE;                                    // windowed/full-screen mode
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;     // allow full-screen switching
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        const D3D_FEATURE_LEVEL FeatureLevels[] = { D3D_FEATURE_LEVEL_11_1,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                                    D3D_FEATURE_LEVEL_11_0,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                                    D3D_FEATURE_LEVEL_10_1,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                                    D3D_FEATURE_LEVEL_10_0,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                                    D3D_FEATURE_LEVEL_9_3,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                                    D3D_FEATURE_LEVEL_9_2,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                                    D3D_FEATURE_LEVEL_9_1};
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        D3D_FEATURE_LEVEL FeatureLevelSupported;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        HRESULT hr = S_OK;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        // create a device, device context and swap chain using the information in the scd struct
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        hr = D3D11CreateDeviceAndSwapChain(NULL,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      D3D_DRIVER_TYPE_HARDWARE,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      NULL,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      0,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      FeatureLevels,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      _countof(FeatureLevels),
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      D3D11_SDK_VERSION,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      &amp;scd,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      &amp;g_pSwapchain,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      &amp;g_pDev,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      &amp;FeatureLevelSupported,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      &amp;g_pDevcon);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        if (hr == E_INVALIDARG) {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            hr = D3D11CreateDeviceAndSwapChain(NULL,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      D3D_DRIVER_TYPE_HARDWARE,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      NULL,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      0,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      &amp;FeatureLevelSupported,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      1,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      D3D11_SDK_VERSION,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      &amp;scd,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      &amp;g_pSwapchain,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      &amp;g_pDev,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      NULL,
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                                      &amp;g_pDevcon);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        if (hr == S_OK) {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            CreateRenderTarget();
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            SetViewPort();
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            InitPipeline();
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+            InitGraphics();
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>         }
+     }
+     return hr;
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -54,11 +212,40 @@ HRESULT CreateGraphicsResources(HWND hWnd)
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN>
+ void DiscardGraphicsResources()
+ {
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-    SafeRelease(&amp;pRenderTarget);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-    SafeRelease(&amp;pLightSlateGrayBrush);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-    SafeRelease(&amp;pCornflowerBlueBrush);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    SafeRelease(&amp;g_pLayout);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    SafeRelease(&amp;g_pVS);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    SafeRelease(&amp;g_pPS);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    SafeRelease(&amp;g_pVBuffer);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    SafeRelease(&amp;g_pSwapchain);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    SafeRelease(&amp;g_pRTView);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    SafeRelease(&amp;g_pDev);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    SafeRelease(&amp;g_pDevcon);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN> }
+
+<SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+// this is the function used to render a single frame
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+void RenderFrame()
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+{
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // clear the back buffer to a deep blue
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    const FLOAT clearColor[] = {0.0f, 0.2f, 0.4f, 1.0f};
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pDevcon-&gt;ClearRenderTargetView(g_pRTView, clearColor);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // do 3D rendering on the back buffer here
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    {
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        // select which vertex buffer to display
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        UINT stride = sizeof(VERTEX);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        UINT offset = 0;
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        g_pDevcon-&gt;IASetVertexBuffers(0, 1, &amp;g_pVBuffer, &amp;stride, &amp;offset);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        // select which primtive type we are using
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        g_pDevcon-&gt;IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        // draw the vertex buffer to the back buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+        g_pDevcon-&gt;Draw(3, 0);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    }
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    // swap the back buffer and the front buffer
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+    g_pSwapchain-&gt;Present(0, 0);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+}
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+ // the WindowProc function prototype
+ LRESULT CALLBACK WindowProc(HWND hWnd,
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -77,9 +264,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN>     // this struct holds information for the window class
+     WNDCLASSEX wc;
+
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-    // initialize COM
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-    if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE))) return -1;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN>     // clear out the window class for use
+     ZeroMemory(&amp;wc, sizeof(WNDCLASSEX));
+
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -97,17 +281,17 @@ int WINAPI WinMain(HINSTANCE hInstance,
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN>
+     // create the window and use the result as the handle
+     hWnd = CreateWindowEx(0,
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          _T("WindowClass1"),    // name of the window class
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          _T("Hello, Engine![Direct 2D]"),   // title of the window
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          WS_OVERLAPPEDWINDOW,    // window style
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          100,    // x-position of the window
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          100,    // y-position of the window
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          960,    // width of the window
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          540,    // height of the window
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          NULL,    // we have no parent window, NULL
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          NULL,    // we aren't using menus, NULL
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          hInstance,    // application handle
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                          NULL);    // used with multiple windows, NULL
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          _T("WindowClass1"),                   // name of the window class
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          _T("Hello, Engine![Direct 3D]"),      // title of the window
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          WS_OVERLAPPEDWINDOW,                  // window style
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          100,                                  // x-position of the window
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          100,                                  // y-position of the window
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          SCREEN_WIDTH,                         // width of the window
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          SCREEN_HEIGHT,                        // height of the window
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          NULL,                                 // we have no parent window, NULL
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          NULL,                                 // we aren't using menus, NULL
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          hInstance,                            // application handle
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                          NULL);                                // used with multiple windows, NULL
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>
+     // display the window on the screen
+     ShowWindow(hWnd, nCmdShow);
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -127,9 +311,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN>         DispatchMessage(&amp;msg);
+     }
+
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-    // uninitialize COM
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-    CoUninitialize();
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN>     // return this part of the WM_QUIT message to Windows
+     return msg.wParam;
+ }
+<SPAN class=gu style="COLOR: rgb(153,153,153)">@@ -144,108 +325,27 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
+</SPAN><SPAN class=gu style="COLOR: rgb(153,153,153)"></SPAN>     switch(message)
+     {
+        case WM_CREATE:
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-               if (FAILED(D2D1CreateFactory(
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                                       D2D1_FACTORY_TYPE_SINGLE_THREADED, &amp;pFactory)))
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-               {
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       result = -1; // Fail CreateWindowEx.
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-               }
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN>                wasHandled = true;
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        result = 1;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN>         break;
+
+        case WM_PAINT:
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-           {
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       HRESULT hr = CreateGraphicsResources(hWnd);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       if (SUCCEEDED(hr))
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       {
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               PAINTSTRUCT ps;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               BeginPaint(hWnd, &amp;ps);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               // start build GPU draw command
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               pRenderTarget-&gt;BeginDraw();
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               // clear the background with white color
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               pRenderTarget-&gt;Clear(D2D1::ColorF(D2D1::ColorF::White));
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                // retrieve the size of drawing area
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                D2D1_SIZE_F rtSize = pRenderTarget-&gt;GetSize();
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                // draw a grid background.
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                int width = static_cast&lt;int&gt;(rtSize.width);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                int height = static_cast&lt;int&gt;(rtSize.height);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                for (int x = 0; x &lt; width; x += 10)
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                {
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                    pRenderTarget-&gt;DrawLine(
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        D2D1::Point2F(static_cast&lt;FLOAT&gt;(x), 0.0f),
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        D2D1::Point2F(static_cast&lt;FLOAT&gt;(x), rtSize.height),
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        pLightSlateGrayBrush,
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        0.5f
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        );
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                }
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                for (int y = 0; y &lt; height; y += 10)
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                {
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                    pRenderTarget-&gt;DrawLine(
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        D2D1::Point2F(0.0f, static_cast&lt;FLOAT&gt;(y)),
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        D2D1::Point2F(rtSize.width, static_cast&lt;FLOAT&gt;(y)),
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        pLightSlateGrayBrush,
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        0.5f
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                        );
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                }
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                // draw two rectangles
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                D2D1_RECT_F rectangle1 = D2D1::RectF(
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                     rtSize.width/2 - 50.0f,
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                     rtSize.height/2 - 50.0f,
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                     rtSize.width/2 + 50.0f,
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                     rtSize.height/2 + 50.0f
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                     );
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                 D2D1_RECT_F rectangle2 = D2D1::RectF(
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                     rtSize.width/2 - 100.0f,
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                     rtSize.height/2 - 100.0f,
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                     rtSize.width/2 + 100.0f,
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                     rtSize.height/2 + 100.0f
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                     );
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                // draw a filled rectangle
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                pRenderTarget-&gt;FillRectangle(&amp;rectangle1, pLightSlateGrayBrush);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                // draw a outline only rectangle
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                pRenderTarget-&gt;DrawRectangle(&amp;rectangle2, pCornflowerBlueBrush);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               // end GPU draw command building
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               hr = pRenderTarget-&gt;EndDraw();
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               {
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                                       DiscardGraphicsResources();
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               }
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                               EndPaint(hWnd, &amp;ps);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       }
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-           }
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+               result = CreateGraphicsResources(hWnd);
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+               RenderFrame();
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>                wasHandled = true;
+         break;
+
+        case WM_SIZE:
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-               if (pRenderTarget != nullptr)
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+               if (g_pSwapchain != nullptr)
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>                {
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       RECT rc;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       GetClientRect(hWnd, &amp;rc);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-                       pRenderTarget-&gt;Resize(size);
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)">+                   DiscardGraphicsResources();
+</SPAN><SPAN class=gi style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(246,246,246)"></SPAN>                }
+                wasHandled = true;
+         break;
+
+        case WM_DESTROY:
+                DiscardGraphicsResources();
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-               if (pFactory) {pFactory-&gt;Release(); pFactory=nullptr; }
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN>                PostQuitMessage(0);
+<SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)">-        result = 1;
+</SPAN><SPAN class=gd style="COLOR: rgb(26,26,26); BACKGROUND-COLOR: rgb(235,235,235)"></SPAN>                wasHandled = true;
+         break;
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>简单解释一下：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>（关于D3D编程的系统教程在这里：<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//msdn.microsoft.com/en-us/library/windows/desktop/hh769064%28v%3Dvs.85%29.aspx" 
+rel="nofollow noreferrer" target=_blank  data-za-detail-view-id="1043">Getting 
+Started with Direct3D</A>）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>基本窗体创建没有任何变化。<I>因为不是COM，不需要创建Factory。</I>（需要考证。从结果上来说是这样，但是这里不需要COM相关的代码的原因应该是D3D11的库当中已经进行了相关的处理。因为D3D12明显是COM）所以WM_CREATE里面基本不做任何事情。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>新加了如下几个函数（子过程）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>         <SPAN class=n>CreateRenderTarget</SPAN><SPAN class=p>();</SPAN>
+            <SPAN class=n>SetViewPort</SPAN><SPAN class=p>();</SPAN>
+            <SPAN class=n>InitPipeline</SPAN><SPAN class=p>();</SPAN>
+            <SPAN class=n>InitGraphics</SPAN><SPAN class=p>();</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>第一个依然是我们熟悉的，创建RenderTarget，也就是画布。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>第二个是设置视口。也就是设置渲染结果在画布当中的映射。我们目前是将整个画布都分配给了一个视口。在实际的游戏开发当中，会有多人分屏游玩的模式。这个时候就需要把一张画布分割成好几个视口。另外一个典型的运用就是VR。VR需要绘制左眼和右眼两幅图像，因此也需要将画布分割为两个视口。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>第三个是初始化渲染管道。渲染管道就是GPU的工作流水线。使用GPU进行3D渲染的时候，最一般的会有顶点变换，像素化和像素填色这3个阶段。在这个过程当中，顶点变换和填色是可以编程的（而像素化是硬件固定功能，不可编程）。在这个初始化函数里面，我们可以看到我们从磁盘读取了两个GPU用的程序，一个叫“copy.vso"，一个叫"copy.pso"。它们分别对应着GPU的顶点变换阶段（Vertex 
+Shading）和像素填色阶段（Pixel 
+Shading）。这两个程序是我们编写的，使用的语言是HLSL（这是一种类似C语言的，微软推出的GPU编程语言）。具体内容在下面说明。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>第四个则是传入实际要绘制的模型的顶点信息了。我们这里绘制的是一个三角形，因此有3个顶点。注意在D3D当中，使用的坐标系为左手坐标系，就是x轴向右，y轴向上，z轴指向屏幕里面。（这点很特别，今后写别的图形API的时候就有比较）</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//msdn.microsoft.com/en-us/library/windows/desktop/bb204853%28v%3Dvs.85%29.aspx" 
+rel="nofollow noreferrer" target=_blank>Coordinate Systems (Direct3D 9)</A></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们的顶点结构是这样的：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// vertex buffer structure
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN><SPAN class=k style="FONT-WEIGHT: 600">struct</SPAN> <SPAN class=n>VERTEX</SPAN> <SPAN class=p>{</SPAN>
+        <SPAN class=n>XMFLOAT3</SPAN>    <SPAN class=n>Position</SPAN><SPAN class=p>;</SPAN>
+        <SPAN class=n>XMFLOAT4</SPAN>    <SPAN class=n>Color</SPAN><SPAN class=p>;</SPAN>
+<SPAN class=p>};</SPAN>
+
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>因此，我们是这样初始化顶点的：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-cpp style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'> <SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic">// create a triangle using the VERTEX struct
+</SPAN><SPAN class=c1 style="COLOR: rgb(153,153,153); FONT-STYLE: italic"></SPAN>    <SPAN class=n>VERTEX</SPAN> <SPAN class=n>OurVertices</SPAN><SPAN class=p>[]</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">=</SPAN>
+    <SPAN class=p>{</SPAN>
+        <SPAN class=p>{</SPAN><SPAN class=n>XMFLOAT3</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">0.0f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.5f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.0f</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>XMFLOAT4</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">1.0f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.0f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.0f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.0f</SPAN><SPAN class=p>)},</SPAN>
+        <SPAN class=p>{</SPAN><SPAN class=n>XMFLOAT3</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">0.45f</SPAN><SPAN class=p>,</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">0.5</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.0f</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>XMFLOAT4</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">0.0f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.0f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.0f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.0f</SPAN><SPAN class=p>)},</SPAN>
+        <SPAN class=p>{</SPAN><SPAN class=n>XMFLOAT3</SPAN><SPAN class=p>(</SPAN><SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">0.45f</SPAN><SPAN class=p>,</SPAN> <SPAN class=o style="FONT-WEIGHT: 600">-</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">0.5f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.0f</SPAN><SPAN class=p>),</SPAN> <SPAN class=n>XMFLOAT4</SPAN><SPAN class=p>(</SPAN><SPAN class=mf style="COLOR: rgb(0,132,255)">0.0f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">0.0f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.0f</SPAN><SPAN class=p>,</SPAN> <SPAN class=mf style="COLOR: rgb(0,132,255)">1.0f</SPAN><SPAN class=p>)}</SPAN>
+    <SPAN class=p>};</SPAN>
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>坐标系的原点在视口的中心，因为我们只有一个视口，所以就是屏幕中心。视口在各个坐标轴的缺省的范围是[-1, 
+1]，因此0.5差不多正好是在画布长宽各1/4的地方。第二个部分是颜色。分别对应R（红色通道）G（绿色通道）B（蓝色通道）和A（透明通道）。这个顺序是在代码的layout部分指定的。范围是[0, 
+1]。所以我们可以看到</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">第一个顶点是上方中央，红色 
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">第二个顶点是下方右侧，绿色 
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row">第三个顶点是下方左侧，蓝色</LI></OL>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后我们来看我们所写的GPU程序(Shader，称为着色器)</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>copy.vs</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>#include "cbuffer.h"
+#include "vsoutput.hs"
+
+v2p main(a2v input) {
+	v2p output;
+	output.position = float4(input.position, 1.0);
+	output.color = input.color;
+
+	return output;
+}
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>看到这个程序基本就是将输入原样输出。其中输入是来自我们的应用程序（就是我们上面定义的VERTEX），而输出是输出给流水线的下一个步骤。在我们这个例子里面，就是像素着色器：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//copy.ps/" 
+rel="nofollow noreferrer" target=_blank  
+data-za-detail-view-id="1043">copy.ps</A></P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>#include "vsoutput.hs"
+
+float4 main(v2p input) : SV_TARGET
+{
+    return input.color;
+}
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>而像素着色器也只是原样输出输入的颜色。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>注意到我们用到了两个头文件。一个是定义应用程序传给Vertex 
+Shader的数据结构，一个是定义Vertex Shader输出给Pixel Shader的数据结构。内容如下：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>cbuffer.h</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>struct a2v {
+	float3 position : POSITION;
+	float4 color	: COLOR;
+};
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>vsoutput.hs</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>struct v2p {
+	float4 position : SV_POSITION;
+	float4 color	: COLOR;
+};
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>我们可以看到，这里面有一些奇怪的，标准C/C++不支持的东西。就是冒号后面的那些东西。这些东西是用来将变量和GPU的寄存器进行绑定的。因为GPU并不是全部可编程的，整个处理流水线当中混杂着可编程的环节和不可编程的环节。因此，当我们的输出要提供给不可编程的环节使用的时候（比如Vertex 
+Shader的输出当中的position会被像素化模块用来插值计算三角形内部的点的坐标；比如Pixel 
+Shader输出的color会被GPU的显示输出模块用来输出画面），就需要将这些变量绑定到一些事先定义好的寄存器当中去。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>具体细节，请参考HLSL教程：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//msdn.microsoft.com/en-us/library/windows/desktop/bb509561%28v%3Dvs.85%29.aspx" 
+rel="nofollow noreferrer" target=_blank  data-za-detail-view-id="1043">HLSL 
+(Windows)</A></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>以及GPU渲染管道的说明：</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><A 
+class=" external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=https%3A//en.m.wikipedia.org/wiki/Graphics_pipeline" 
+rel="nofollow noreferrer" target=_blank  data-za-detail-view-id="1043"><SPAN 
+class=invisible 
+style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">https://</SPAN><SPAN 
+class=visible>en.m.wikipedia.org/wiki</SPAN><SPAN class=invisible 
+style="COLOR: transparent; FONT: 0px/0 a; BACKGROUND-COLOR: transparent; font-stretch: normal; text-shadow: none">/Graphics_pipeline</SPAN><SPAN 
+class=ellipsis></SPAN></A><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>在Windows当中，编译Shader（D3D规格）的方法如下：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>fxc /T vs_5_0 /Zi /Fo copy.vso copy.vs
+fxc /T ps_5_0 /Zi /Fo copy.pso copy.ps</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>如果找不到fxc.exe，那么应该是没有安装DirectX相关的开发包。重新运行Visual 
+Studio选择安装就可以了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>代码编译的方法如下（调试版）（编译出现大量DirectXMath相关的错误的话，继续看下面）：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>D:\wenli\Source\Repos\GameEngineFromScratch\Platform\Windows&gt;clang-cl -I./DirectXMath/Inc -c -Z7 -o helloengine_d3d.obj helloengine_d3d.cpp
+D:\wenli\Source\Repos\GameEngineFromScratch\Platform\Windows&gt;link -debug user32.lib d3d11.lib d3dcompiler.lib helloengine_d3d.obj</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>Release版：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>D:\wenli\Source\Repos\GameEngineFromScratch\Platform\Windows&gt;clang -I./DirectXMath/Inc -l user32.lib -l d3d11.lib -l d3dcompiler.lib -o helloengine_d3d.exe helloengine_d3d.cpp</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><I>Direct 
+3D工作的方式与Direct 
+2D不同，不是采用COM的方式</I>，（需要考证。从结果上来说确实不需要链接ole32.lib。但是有可能是D3D11的库里面包括了这一部分）而是直接调用显卡的驱动。所以我们去掉COM相关的初始化代码，链接的时候也去掉ole32.lib。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>注意我们这里加入了一个新的头文件目录：./DirectXMath。这是因为目前随Visual 
+Studio安装的（正确来说应该是随Windows 
+SDK安装的）DirectXMath库似乎版本还是比较老的，不支持clang的编译（就是说用了clang所不支持的特性）。所以我们需要从github上面下载一个最新的版本：</P>
+<DIV class=highlight 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><PRE style="OVERFLOW: auto; WORD-WRAP: normal; FONT-SIZE: 0.9em; BACKGROUND: rgb(246,246,246); WHITE-SPACE: pre; WORD-BREAK: normal; PADDING-BOTTOM: 0.88em; PADDING-TOP: 0.88em; PADDING-LEFT: 0.88em; MARGIN: 0px; PADDING-RIGHT: 0.88em; border-radius: 4px"><CODE class=language-text style='FONT-FAMILY: Menlo, Monaco, Consolas, "Andale Mono", "lucida console", "Courier New", monospace; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 0px; PADDING-RIGHT: 0px; border-radius: 0px'>D:\wenli\Source\Repos\GameEngineFromScratch\Platform\Windows&gt;git submodule add https://github.com/Microsoft/DirectXMath.git DirectXMath
+D:\wenli\Source\Repos\GameEngineFromScratch\Platform\Windows&gt;git submodule init DirectXMath
+D:\wenli\Source\Repos\GameEngineFromScratch\Platform\Windows&gt;git submodule update DirectXMath
+</CODE></PRE></DIV>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>然后重新编译应该就好了。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>运行的效果如下：</P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="origin_image zh-lightbox-thumb lazy" 
+style="CURSOR: zoom-in; MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic1.zhimg.com/80/v2-39821ce8492f9c354459c8d9e7e70064_hd.png" 
+width=946  data-rawwidth="946" data-rawheight="473" 
+data-actualsrc="https://pic1.zhimg.com/v2-39821ce8492f9c354459c8d9e7e70064_b.png" 
+data-original="https://pic1.zhimg.com/v2-39821ce8492f9c354459c8d9e7e70064_r.jpg"></FIGURE></P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>三角形内部出现了漂亮的过渡色。这是因为我们程序给GPU的只有3个顶点，对于其它的点，GPU是根据它到3个顶点的距离（准确说是重心坐标，就是从被计算的点向3个顶点作辅助线，从而整个3角形被划分为3个小三角形（如果点在三角形边缘的时候会出现面积为0的塌缩三角形），每个小三角性的面积除以原本的大三角形的面积，得到3个[0，1]之间的值，根据这个值加权平均3个顶点的颜色）来进行插值运算的。这种插值运算不仅仅发生在position这个参数当中，也发生在color这个参数当中。所以最终就形成了这么一种结果。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>好了。我们已经跨入了3D的殿堂了。保存我们的代码，准备下一个部分。</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>（-- 
+EOF --)</P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>参考引用：</P>
+<OL 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); PADDING-BOTTOM: 0px; FONT-STYLE: normal; PADDING-TOP: 0px; PADDING-LEFT: 0px; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; DISPLAY: table; LETTER-SPACING: normal; COUNTER-RESET: ol 0; PADDING-RIGHT: 0px; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=http%3A//www.rastertek.com/tutdx11.html" 
+  rel="nofollow noreferrer" target=_blank  data-za-detail-view-id="1043">DirectX 
+  11 Tutorials</A>
+  <LI style="LIST-STYLE-TYPE: none; DISPLAY: table-row"><A 
+  class=" wrap external" 
+  style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+  href="https://link.zhihu.com/?target=https%3A//msdn.microsoft.com/en-us/library/windows/desktop/bb153264%28v%3Dvs.85%29.aspx" 
+  rel="nofollow noreferrer" target=_blank  data-za-detail-view-id="1043">Direct3D 
+  Tutorials</A></LI></OL>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P><FIGURE 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><IMG 
+class="content_image lazy" 
+style="MAX-WIDTH: 100%; MARGIN: 0px auto; DISPLAY: block" 
+src="https://pic2.zhimg.com/80/v2-229daa2bfc2444f20a57a2deabf6522d_hd.png" 
+width=88  data-rawwidth="88" data-rawheight="31" 
+data-actualsrc="https://pic2.zhimg.com/v2-229daa2bfc2444f20a57a2deabf6522d_b.png"></FIGURE></P>
+<P class=ztext-empty-paragraph 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: -0.8em 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'><BR></P>
+<P 
+style='FONT-SIZE: medium; FONT-FAMILY: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif; WHITE-SPACE: normal; WORD-SPACING: 0px; TEXT-TRANSFORM: none; FONT-WEIGHT: normal; COLOR: rgb(26,26,26); FONT-STYLE: normal; MARGIN: 1.4em 0px 0px; ORPHANS: 2; WIDOWS: 2; LETTER-SPACING: normal; BACKGROUND-COLOR: rgb(255,255,255); TEXT-INDENT: 0px; font-variant-ligatures: normal; font-variant-caps: normal; -webkit-text-stroke-width: 0px'>本作品采用<A 
+class=" wrap external" 
+style="CURSOR: pointer; TEXT-DECORATION: none; BORDER-BOTTOM: grey 1px solid; COLOR: " 
+href="https://link.zhihu.com/?target=http%3A//creativecommons.org/licenses/by/4.0/" 
+rel="nofollow noreferrer" target=_blank  data-za-detail-view-id="1043">知识共享署名 4.0 
+国际许可协议</A>进行许可。</P></body>
+</html>
